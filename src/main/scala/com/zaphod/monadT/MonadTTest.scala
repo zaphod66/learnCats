@@ -120,21 +120,11 @@ object Funcs {
 
   def factorsPresentT(n: Int): OptionT[List, Int] =
     OptionT(
-      (1 to n).map { i =>
-        if (n % 1 == 0)
-          Some(n / i)
-        else
-          None
-      }.toList
+      factorsPresent(n)
     )
 
   def expensiveComputationT(n: Int): OptionT[Future, Int] =
     OptionT(
-      if (n == 1)
-        Future { None }
-      else if (n % 2 == 0)
-        Future { Some(n / 2) }
-      else
-        Future { Some((n + 1) / 2) }
+      expensiveComputation(n)
     )
 }
