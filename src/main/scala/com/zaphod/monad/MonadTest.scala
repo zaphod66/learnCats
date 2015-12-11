@@ -26,7 +26,9 @@ object MonadTest extends App {
   case class OptionT[F[_], A](value: F[Option[A]])
 
   implicit def optionTMonad[F[_]](implicit F: Monad[F]) = {
-    new Monad[OptionT[F, ?]] {
+//  new Monad[OptionT[F, ?]] {
+    type OptionAlias[A] = OptionT[F, A]
+    new Monad[OptionAlias] {
       def pure[A](a: A): OptionT[F, A] = OptionT(F.pure(Some(a)))
       def flatMap[A, B](fa: OptionT[F, A])(f: A => OptionT[F, B]): OptionT[F, B] = {
         OptionT {
@@ -38,4 +40,5 @@ object MonadTest extends App {
       }
     }
   }
+
 }
