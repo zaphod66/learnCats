@@ -1,7 +1,7 @@
 package com.zaphod.monad
 
 import cats._
-import cats.std.all._
+
 import scala.language.higherKinds
 
 object MonadTest extends App {
