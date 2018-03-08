@@ -4,6 +4,11 @@ import cats._
 import cats.data._
 import cats.implicits._
 
+import cats.Apply._
+import cats.syntax.apply._
+import cats.Applicative._
+import cats.syntax.applicative._
+
 import scala.concurrent._
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -11,7 +16,9 @@ import scala.language.higherKinds
 
 object MonadTTest extends App {
 
-  def stringToInt(x: String): Validated[String, Int] = {
+  type Vali[A] = Validated[String, A]
+
+  def stringToInt(x: String): Vali[Int] = {
     try {
       Validated.valid(x.toInt)
     } catch {
@@ -23,17 +30,31 @@ object MonadTTest extends App {
   println(stringToInt("1"))
   println(stringToInt("a"))
 
-  println( (stringToInt("1") |@| stringToInt("2")) map { (n, m) => n + m } )
-  println( (stringToInt("1") |@| stringToInt("b")) map { (n, m) => n + m } )
-  println( (stringToInt("a") |@| stringToInt("b")) map { (n, m) => n + m } )
+  val o1: Option[Int] = Option(1)
+  val o2: Option[Int] = Option(2)
+  val ao = Apply[Option].map2(o1, o2)((x, y) => x + y)
+
+  val v1: Vali[Int] = stringToInt("1")
+  val v2: Vali[Int] = stringToInt("2")
+  val v3: Vali[Int] = stringToInt("b")
+
+  val av1 = Apply[Vali].map2(v1, v2)((x, y) => x + y)
+  val av2 = Apply[Vali].map2(v1, v3)((x, y) => x + y)
+  val av3 = Apply[Vali].map2(v3, v2)((x, y) => x + y)
+
+  //val l1 = Apply[Validated[String, Int]].map2(stringToInt("1"), stringToInt("2"))((s1, s2) => s1)
+
+  println(s"av1 = $av1")
+  println(s"av2 = $av2")
+  println(s"av3 = $av3")
 
   val l1 = List("1",   "2",  "3")
   val l2 = List("1",  "2b", "3c")
   val l3 = List("1a", "2b", "3c")
 
-  println( l1.traverseU(stringToInt) )
-  println( l2.traverseU(stringToInt) )
-  println( l3.traverseU(stringToInt) )
+  println( l1.traverse(stringToInt) )
+  println( l2.traverse(stringToInt) )
+  println( l3.traverse(stringToInt) )
 
   ///////////////////////////////////
   // composing Functors and Applicatives
@@ -80,26 +101,26 @@ object MonadTTest extends App {
 
   r1 foreach println
 
-  val r2 = for {
-    n <- Funcs.expensiveComputationT(3)
-    m <- Funcs.expensiveComputationT(n)
-  } yield m
-
-  r2.run foreach println
+//  val r2 = for {
+//    n <- Funcs.expensiveComputationT(3)
+//    m <- Funcs.expensiveComputationT(n)
+//  } yield m
+//
+//  r2.run foreach println
 }
 
 // for using in for comprehensions
 // OptionT is a wrapper => a convienence wrapper for flatMapForOption
-case class OptionT[M[_], A](run: M[Option[A]]) {
-  def flatMap[B](f: A => OptionT[M, B])(implicit M: Monad[M]): OptionT[M, B] =
-    OptionT(run.flatMap{
-      case None    => M.pure(None: Option[B])
-      case Some(a) => f(a).run
-    })
-
-  def map[B](f: A => B)(implicit M: Functor[M]): OptionT[M, B] =
-    OptionT(run.map(_.map(f)))
-}
+//case class OptionT[M[_], A](run: M[Option[A]]) {
+//  def flatMap[B](f: A => OptionT[M, B])(implicit M: Monad[M]): OptionT[M, B] =
+//    OptionT(run.flatMap{
+//      case None    => M.pure(None: Option[B])
+//      case Some(a) => f(a).run
+//    })
+//
+//  def map[B](f: A => B)(implicit M: Functor[M]): OptionT[M, B] =
+//    OptionT(run.map(_.map(f)))
+//}
 
 object Funcs {
   def factorsPresent(n: Int): List[Option[Int]] =

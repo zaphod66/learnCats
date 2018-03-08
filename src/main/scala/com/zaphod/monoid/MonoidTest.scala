@@ -25,10 +25,9 @@ object MonoidTest extends App {
     }
   }
 
-  val lc = l.foldMap(i => (i, i.toString))
+//  val lc = l.foldMap(i => (i, i.toString))
 
   println(s"l  = $l")
   println(s"li = $li")
   println(s"ls = $ls")
-  println(s"lc = $lc")
 }

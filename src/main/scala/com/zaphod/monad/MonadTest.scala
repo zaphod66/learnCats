@@ -1,5 +1,5 @@
 package com.zaphod.monad
-
+/*
 import cats._
 
 import scala.language.higherKinds
@@ -42,3 +42,4 @@ object MonadTest extends App {
   }
 
 }
+*/

@@ -1,5 +1,5 @@
 package com.zaphod.monadFree
-
+/*
 import cats.free.Free
 import cats.{Id, ~>}
 
@@ -117,3 +117,4 @@ object MonadFree extends App {
   println(result12)
   println(result22)
 }
+*/
