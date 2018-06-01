@@ -18,5 +18,7 @@ libraryDependencies += "org.typelevel" %% "cats-effect-laws" % "0.9" % "test"
 
 scalacOptions += "-feature"
 
-initialCommands in console := "import cats._, cats.implicits._"
+scalacOptions += "-Ypartial-unification"
+
+// initialCommands in console := "import cats._, cats.implicits._"
 
