@@ -1,6 +1,6 @@
 package com.zaphod.UnderScore
 
-object Chapter1_Show extends App {
+object Chapter01_Show extends App {
   import cats.Show
   import cats.instances.int._
   import cats.instances.string._

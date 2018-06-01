@@ -1,6 +1,6 @@
 package com.zaphod.UnderScore
 
-object Chapter2_Monoid extends App {
+object Chapter02_Monoid extends App {
   import cats.Monoid
 
   val booleanAndMonoid = new Monoid[Boolean] {
