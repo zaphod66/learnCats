@@ -1,4 +1,4 @@
-package com.zaphod.monad
+// package com.zaphod.monad
 /*
 import cats._
 

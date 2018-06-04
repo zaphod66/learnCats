@@ -2,11 +2,11 @@ name := """LearnCats"""
 
 version := "1.0-SNAPSHOT"
 
-scalaVersion := "2.11.9"
+scalaVersion := "2.12.6"
 
-libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.4" % "test"
+libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.5" % "test"
 
-libraryDependencies += "org.scalacheck" %% "scalacheck" % "1.11.4" % "test"
+libraryDependencies += "org.scalacheck" %% "scalacheck" % "1.14.0" % "test"
 
 libraryDependencies += "commons-io" % "commons-io" % "2.3"
 

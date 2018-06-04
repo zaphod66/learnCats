@@ -41,4 +41,48 @@ object Chapter04_Monad extends App {
     val fut1 = mf.flatMap(mf.pure(1))(x => mf.pure(x + 2))
     val res1 = Await.result(fut1, 1.second)
   }
+
+  object Syntax {
+    import cats.syntax.flatMap._
+    import cats.syntax.functor._
+    import cats.syntax.applicative._
+
+    import cats.instances.option._
+    import cats.instances.list._
+
+    val opt1 = 1.pure[Option]
+    val lis1 = 1.pure[List]
+
+    import cats.Monad
+
+    def sumSquare[F[_]: Monad](a: F[Int], b: F[Int]): F[Int] = a.flatMap(x => b.map(y => x*x + y*y))
+
+    val sum1 = sumSquare(3.pure[Option], 4.pure[Option])
+    val sum2 = sumSquare(List(1,2,3), List(4, 5))
+
+    println(s"sum1: $sum1")
+    println(s"sum2: $sum2")
+  }
+
+  object Identity {
+    import cats.Monad
+    import Chapter04_Monad.Syntax.sumSquare
+
+    type Id[A] = A
+
+    implicit val idMonad = new Monad[Id] {
+      override def pure[A](x: A): Id[A] = x
+      override def flatMap[A, B](fa: Id[A])(f: A => Id[B]): Id[B] = f(fa)
+      override def map[A, B](fa: Id[A])(f: A => B): Id[B] = f(fa)
+
+      override def tailRecM[A, B](a: A)(f: A => Id[Either[A, B]]): Id[B] = ???
+    }
+
+    val sum1 = sumSquare(2: Id[Int], 3: Id[Int])
+
+    println(s"sum1: $sum1")
+  }
+
+  Syntax
+  Identity
 }
