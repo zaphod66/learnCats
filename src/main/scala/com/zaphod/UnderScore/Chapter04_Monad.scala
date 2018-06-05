@@ -157,7 +157,101 @@ object Chapter04_Monad extends App {
     val res = success2.ensure("Number too low!")(_ > 1000)
   }
 
+  object MonadEvalUse {
+//    val x = { println(s"Computing x!"); math.random }         // eager, now
+//    lazy val y =  { println(s"Computing y!"); math.random }   // lazy, later
+//    def z = { println(s"Computing z!"); math.random } // lazy, always
+//
+//    println("------")
+//    println(s"x: $x")
+//    println(s"x: $x")
+//
+//    println(s"y: $y")
+//    println(s"y: $y")
+//
+//    println(s"z: $z")
+//    println(s"z: $z")
+
+    import cats.Eval
+
+//    val n = Eval.now    { println(s"Computing n!"); math.random + 1000 }
+//    val l = Eval.later  { println(s"Computing l!"); math.random + 1000 }
+//    val a = Eval.always { println(s"Computing a!"); math.random + 1000 }
+//
+//    println("------")
+//    println(s"n: ${n.value}")
+//    println(s"n: ${n.value}")
+//
+//    println(s"l: ${l.value}")
+//    println(s"l: ${l.value}")
+//
+//    println(s"a: ${a.value}")
+//    println(s"a: ${a.value}")
+//
+//    val greeting = Eval.
+//      always { println("Step1"); "Hello" }.
+//      map { s => println("Step2"); s"$s world" }
+//
+//    println(s"greeting: ${greeting.value}")
+//    println(s"greeting: ${greeting.value}")
+
+    val result = for {
+      x <- Eval.now    { println("Calculating x"); 30 }
+      y <- Eval.later  { println("Calculating y"); 10 }
+      z <- Eval.always { println("Calculating z");  2 }
+    } yield {
+      println("Adding x, y and z")
+      x + y + z
+    }
+
+//    println(s"result: ${result.value}")
+//    println(s"result: ${result.value}")
+
+    val saying = Eval.
+      always { println("Step 1"); "The cat" }.
+      map    { s => println("Step 2"); s"$s sat on" }.
+      memoize.
+      map    { s => println("Step 3"); s"$s the mat" }
+
+    println(s"saying: ${saying.value}")
+    println(s"saying: ${saying.value}")
+
+    // Trampolining and Eval.defer
+
+    def fac1(n: BigInt): BigInt = if (n == 1) 1 else n * fac1(n - 1)  // Stackoverflow
+
+    def fac2(n: BigInt): Eval[BigInt] = if (n == 1) Eval.now(1) else Eval.defer(fac2(n - 1).map(_ * n))
+
+    def fac3(n: BigInt): BigInt = {
+      def go(n: BigInt): Eval[BigInt] = if (n == 1) Eval.now(1) else Eval.defer(go(n - 1).map(_ * n))
+
+      go(n).value
+    }
+
+    // val f1 = fac1(5000)
+    val f2 = fac2(5000)
+    val f3 = fac3(5000)
+
+//    println(s"f2: ${f2.value}")
+
+    def foldRight[A, B](as: List[A], acc: B)(f: (A, B) => B): B = {
+      def go(as: List[A], acc: Eval[B])(f: (A, Eval[B]) => Eval[B]): Eval[B] = as match {
+        case h :: t => Eval.defer(f(h, go(t, acc)(f)))
+        case Nil    => acc
+      }
+
+      go(as, Eval.now(acc)) { (a, b) => b.map( f(a, _) ) }.value
+    }
+
+    val l = List.fill(50000)(1)
+    val s = foldRight(l, 0)(_ + _)
+
+    println(s"s = $s")
+  }
+
   Syntax
   Identity
   EitherUse
+
+  MonadEvalUse
 }
