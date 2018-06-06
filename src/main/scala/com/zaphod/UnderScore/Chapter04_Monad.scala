@@ -313,12 +313,52 @@ object Chapter04_Monad extends App {
     }
   }
 
+  object ReaderUse {
+    import cats.data.Reader
+
+    case class Cat(name: String, favFood: String)
+
+    val catName:   Reader[Cat, String] = Reader(cat => cat.name)
+    val greetCat:  Reader[Cat, String] = catName.map(name => s"Hello $name")
+    val feedCat:   Reader[Cat, String] = Reader(cat => s"Have a nice bowl of ${cat.favFood}")
+    val greetFeed = for {
+      greet <- greetCat
+      feed  <- feedCat
+    } yield s"$greet. $feed."
+
+    println(s"""${greetFeed(Cat("Garfield", "lasagne"))}""")
+    println(s"""${greetFeed(Cat("Heathcliff", "junk food"))}""")
+
+    case class DB(
+      userNames: Map[Int, String],
+      passwords: Map[String, String]
+    )
+
+    type DBReader[A] = Reader[DB, A]
+
+    def findUser(userId: Int): DBReader[Option[String]] = Reader { db => db.userNames.get(userId) }
+    def checkPass(userName: String, password: String): DBReader[Boolean] = Reader { db => db.passwords.get(userName).contains(password) }
+
+    import cats.syntax.applicative._
+
+    def checkLogin(userId: Int, password: String): DBReader[Boolean] = for {
+      name <- findUser(userId)
+      pass <- name.fold(false.pure[DBReader])(checkPass(_, password))
+    } yield pass
+
+    val users = Map( 1 -> "Dave", 2 -> "Kate", 3 -> "Eric")
+    val pswds = Map( "Dave" -> "evaD", "Kate" -> "etaK", "Eric" -> "cirE")
+    val db    = DB(users, pswds)
+
+    println(s"""checkLogin(1, "evaD") = ${ checkLogin(1, "evaD").run(db) }""")
+    println(s"""checkLogin(4, "evaD") = ${ checkLogin(4, "evaD").run(db) }""")
+  }
+
 //  Syntax
 //  IdentityMonad
 //  EitherUse
 
 //  MonadEvalUse
-//  WriterUse
 
   import scala.concurrent._
   import scala.concurrent.ExecutionContext.Implicits.global
@@ -334,4 +374,6 @@ object Chapter04_Monad extends App {
   r2.map(_.run) foreach { case (log, res) =>
     println(f"""$res%4d: ${ log.mkString(", ") }""")
   }
+
+  ReaderUse
 }
