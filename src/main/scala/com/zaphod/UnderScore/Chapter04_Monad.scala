@@ -69,7 +69,7 @@ object Chapter04_Monad extends App {
     println(s"sum2: $sum2")
   }
 
-  object Identity {
+  object IdentityMonad {
 
     import cats.Monad
     import Chapter04_Monad.Syntax.sumSquare
@@ -249,9 +249,89 @@ object Chapter04_Monad extends App {
     println(s"s = $s")
   }
 
-  Syntax
-  Identity
-  EitherUse
+  object WriterUse {
+    import cats.data.Writer
+    import cats.instances.vector._    // for Monoid
+    import cats.syntax.applicative._  // for pure
+    import cats.syntax.writer._
 
-  MonadEvalUse
+    type Logged[A] = Writer[Vector[String], A]
+
+    val w1 = 42.pure[Logged]
+    val w2 = Vector("msg1", "msg2", "msg3").tell
+    val w3 = Writer(Vector("msg1", "msg2", "msg3"), 42)
+    val w4 = 42.writer(Vector("msg1", "msg2", "msg3"))
+
+    val r4 = w4.value
+    val l4 = w4.written
+    val (r, l) = w4.run
+
+//    println(s"w4: $w4")
+//    println(s"r4: $r4")
+//    println(s"l4: $l4")
+
+    val w5 = for {
+      a <- 10.pure[Logged]
+      _ <- Vector("a, b, c").tell
+      b <- 32.writer(Vector("x", "y", "z"))
+    } yield a + b
+
+    println(s"w5: $w5")
+
+    val w6 = w5.mapWritten(_.map(_.toUpperCase))
+
+//    println(s"w6: $w6")
+
+    val w7 = w5.bimap(_.map(_ + "!"), _ * 100)
+    val w8 = w5.mapBoth { (l1, r1) =>
+      val l2 = l1.map(_ + "!")
+      val r2 = r1 * 100
+
+      (l2, r2)
+    }
+
+    println(s"w7: $w7")
+//    println(s"w8: $w8")
+
+    def slowly[A](body: => A) = try body finally Thread.sleep(100)
+
+    def fac1(n: Int): Int = {
+      val ans = slowly { if (n == 1) 1 else n * fac1(n - 1) }
+      println(f"fac1($n) = $ans%4d Thread: ${ Thread.currentThread.getId }")
+      ans
+    }
+
+    def fac2(n: Int): Logged[Int] = {
+      for {
+        ans <- if (n == 0) {
+                 1.pure[Logged]
+               } else {
+                 slowly { fac2(n - 1). map(_ * n) }
+               }
+        _ <- Vector(s"fac2($n) = $ans").tell
+      } yield ans
+    }
+  }
+
+//  Syntax
+//  IdentityMonad
+//  EitherUse
+
+//  MonadEvalUse
+//  WriterUse
+
+  import scala.concurrent._
+  import scala.concurrent.ExecutionContext.Implicits.global
+  import scala.concurrent.duration._
+
+  import WriterUse._
+
+  val v1 = Vector(Future(fac1(3)), Future(fac1(5)), Future(fac1(4)))
+  val r1 = Await.result(Future.sequence(v1), 5.seconds)
+
+  val v2 = Vector(Future(fac2(3)), Future(fac2(5)), Future(fac2(4)))
+  val r2 = Await.result(Future.sequence(v2), 5.seconds)
+  r2.map(_.run) foreach { case (log, res) =>
+    println(f"""$res%4d: ${ log.mkString(", ") }""")
+  }
 }
