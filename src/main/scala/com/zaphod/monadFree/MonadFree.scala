@@ -1,4 +1,4 @@
-package com.zaphod.monadFree
+// package com.zaphod.monadFree
 /*
 import cats.free.Free
 import cats.{Id, ~>}
