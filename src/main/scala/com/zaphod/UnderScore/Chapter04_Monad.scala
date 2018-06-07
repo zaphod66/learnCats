@@ -157,7 +157,7 @@ object Chapter04_Monad extends App {
     val res = success2.ensure("Number too low!")(_ > 1000)
   }
 
-  object MonadEvalUse {
+  object EvalMonad {
 //    val x = { println(s"Computing x!"); math.random }         // eager, now
 //    lazy val y =  { println(s"Computing y!"); math.random }   // lazy, later
 //    def z = { println(s"Computing z!"); math.random } // lazy, always
@@ -249,7 +249,7 @@ object Chapter04_Monad extends App {
     println(s"s = $s")
   }
 
-  object WriterUse {
+  object WriterMonad {
     import cats.data.Writer
     import cats.instances.vector._    // for Monoid
     import cats.syntax.applicative._  // for pure
@@ -313,7 +313,7 @@ object Chapter04_Monad extends App {
     }
   }
 
-  object ReaderUse {
+  object ReaderMonad {
     import cats.data.Reader
 
     case class Cat(name: String, favFood: String)
@@ -354,26 +354,196 @@ object Chapter04_Monad extends App {
     println(s"""checkLogin(4, "evaD") = ${ checkLogin(4, "evaD").run(db) }""")
   }
 
+  object StateMonad {
+    import cats.data.State
+
+    val a = State[Int, String] { state => (state, s"The state is $state") }
+    val (r1, s1) = a.run(10).value
+    val s2 = a.runS(10).value // return only the state
+    val r2 = a.runA(10).value // return only the result
+
+    println(s"r1 = $r1, s1 = $s1")
+
+    val step1 = State[Int, String] { num =>
+      val sta = num + 1
+      val res = s"Result of step1 is $sta"
+
+      (sta, res)
+    }
+
+    val step2 = State[Int, String] { num =>
+      val sta = num * 2
+      val res = s"Result of step2 is $sta"
+
+      (sta, res)
+    }
+
+    val both = for {
+      a <- step1
+      b <- step2
+    } yield (a, b)
+
+    val (s3, r3) = both.run(20).value
+
+    println(s"r3 = $r3, s3 = $s3")
+
+    type CalcState[A] = State[List[Int], A]
+
+    def operand(num: Int): CalcState[Int] = State[List[Int], Int] { stack => (num :: stack, num) }
+    def operator(f: (Int, Int) => Int): CalcState[Int] = State[List[Int], Int] {
+      case x :: y :: tail =>
+        val res = f(x, y)
+        (res :: tail, res)
+
+      case _ => sys.error("fail!")
+    }
+
+    def evalSym(sym: String): CalcState[Int] = {
+      sym match {
+        case "+" => operator(_ + _)
+        case "-" => operator(_ - _)
+        case "*" => operator(_ * _)
+        case "/" => operator(_ / _)
+        case num => operand(num.toInt)
+      }
+    }
+
+    val e1 = evalSym("2").runA(List.empty[Int]).value
+    val e2 = evalSym("+").runA(List(2, 3)).value
+    val e3 = (for {
+      _ <- evalSym("3")
+      _ <- evalSym("1")
+      r <- evalSym("+")
+    } yield r).runA(List.empty[Int]).value
+
+    println(s"e1 = $e1, e2 = $e2, e3 = $e3")
+
+    def evalAll(in: List[String]): CalcState[Int] = {
+      import cats.syntax.applicative._
+
+      in.foldLeft(0.pure[CalcState]) { (acc, x) => acc.flatMap( _ => evalSym(x)) }
+    }
+
+    val e4 = evalAll(List("2", "3", "+", "4", "*")).runA(List.empty[Int]).value
+
+    def evalInput(input: String): Int = evalAll(input.split(" ").toList).runA(List.empty[Int]).value
+
+    val e5 = evalInput("1 2 + 3 4 + * 2 *")
+
+    val prog = for {
+      - <- evalAll(List("1", "2", "3", "*", "+"))
+      _ <- evalAll(List("2", "3", "+"))
+      r <- evalSym("-")
+    } yield r
+
+    val e6 = prog.runA(List.empty[Int]).value
+
+    println(s"e4 = $e4, e5 = $e5, e6 = $e6")
+  }
+
+  object TreeMonad {
+    import cats.Monad
+    import cats.syntax.applicative._
+
+    sealed trait Tree[+A]
+    final case class Branch[A](l: Tree[A], r: Tree[A]) extends Tree[A]
+    final case class Leaf[A](value: A) extends Tree[A]
+
+    def branch[A](l: Tree[A], r: Tree[A]): Tree[A] = Branch(l ,r)
+    def leaf[A](value: A): Tree[A] = Leaf(value)
+
+    implicit val treeMonad = new Monad[Tree] {
+      override def pure[A](a: A): Tree[A] = leaf(a)
+
+      override def flatMap[A, B](fa: Tree[A])(f: A => Tree[B]): Tree[B] = fa match {
+        case Leaf(a)      => f(a)
+        case Branch(l, r) => branch(flatMap(l)(f), flatMap(r)(f))
+      }
+
+      // not tail-recursive
+      override def tailRecM[A, B](value: A)(f: A => Tree[Either[A, B]]): Tree[B] = f(value) match {
+        case Leaf(Right(a)) => leaf(a)
+        case Leaf(Left(a))  => tailRecM(a)(f)
+        case Branch(l, r)   => branch(
+          flatMap(l) {
+            case Left(a)  => tailRecM(a)(f)
+            case Right(a) => pure(a)
+          },
+          flatMap(r) {
+            case Left(a)  => tailRecM(a)(f)
+            case Right(a) => pure(a)
+          }
+        )
+      }
+    }
+
+    import cats.syntax.functor._
+    import cats.syntax.flatMap._
+
+    val t0 = branch(branch(leaf("a"), branch(leaf("b"), leaf("c"))), leaf("d"))
+    val t1 = branch(leaf(100), leaf(200))
+    val t2 = t1.flatMap(a => branch(leaf(a - 1), leaf(a + 1)))
+    val t3 = for {
+      a <- t1
+      b <- branch(leaf(a - 10), leaf(a + 10))
+      c <- branch(leaf(b - 1), leaf(b + 1))
+    } yield c
+
+    println(s"t1: $t1")
+    println(s"t2: $t2")
+    println(s"t3: $t3")
+
+    def labelTree[A](tree: Tree[A]): Tree[(A, Int)] = {
+      import cats.data.State
+
+      def go[A](tree: Tree[A]): State[Int, Tree[(A, Int)]] = State[Int, Tree[(A, Int)]] { s1 =>
+        tree match {
+          case Leaf(i)      => (s1 + 1, leaf(i, s1))
+          case Branch(l, r) =>
+            val (s2, ll) = go(l).run(s1).value
+            val (s3, rl) = go(r).run(s2).value
+
+            (s3, branch(ll, rl))
+        }
+      }
+
+      go(tree).runA(1).value
+    }
+
+    val t4 = labelTree(t1)
+    val t5 = labelTree(t2)
+    val t6 = labelTree(t3)
+    val t7 = labelTree(t0)
+
+    println(s"t4: $t4")
+    println(s"t5: $t5")
+    println(s"t6: $t6")
+    println(s"t7: $t7")
+  }
+
 //  Syntax
 //  IdentityMonad
 //  EitherUse
 
 //  MonadEvalUse
 
-  import scala.concurrent._
-  import scala.concurrent.ExecutionContext.Implicits.global
-  import scala.concurrent.duration._
+  // testing WriterMonad
+//  import scala.concurrent._
+//  import scala.concurrent.ExecutionContext.Implicits.global
+//  import scala.concurrent.duration._
+//
+//  import WriterMonad._
+//
+//  val v1 = Vector(Future(fac1(3)), Future(fac1(5)), Future(fac1(4)))
+//  val r1 = Await.result(Future.sequence(v1), 5.seconds)
+//
+//  val v2 = Vector(Future(fac2(3)), Future(fac2(5)), Future(fac2(4)))
+//  val r2 = Await.result(Future.sequence(v2), 5.seconds)
+//  r2.map(_.run) foreach { case (log, res) =>
+//    println(f"""$res%4d: ${ log.mkString(", ") }""")
+//  }
 
-  import WriterUse._
-
-  val v1 = Vector(Future(fac1(3)), Future(fac1(5)), Future(fac1(4)))
-  val r1 = Await.result(Future.sequence(v1), 5.seconds)
-
-  val v2 = Vector(Future(fac2(3)), Future(fac2(5)), Future(fac2(4)))
-  val r2 = Await.result(Future.sequence(v2), 5.seconds)
-  r2.map(_.run) foreach { case (log, res) =>
-    println(f"""$res%4d: ${ log.mkString(", ") }""")
-  }
-
-  ReaderUse
+//  ReaderMonad
+  StateMonad
+  TreeMonad
 }
