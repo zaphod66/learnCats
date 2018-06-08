@@ -443,7 +443,6 @@ object Chapter04_Monad extends App {
 
   object TreeMonad {
     import cats.Monad
-    import cats.syntax.applicative._
 
     sealed trait Tree[+A]
     final case class Branch[A](l: Tree[A], r: Tree[A]) extends Tree[A]
