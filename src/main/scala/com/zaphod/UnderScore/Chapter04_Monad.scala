@@ -493,12 +493,32 @@ object Chapter04_Monad extends App {
     println(s"t2: $t2")
     println(s"t3: $t3")
 
-    def labelTree[A](tree: Tree[A]): Tree[(A, Int)] = {
+    trait Incrementable[A] {
+      def zero: A
+      def succ(a: A): A
+    }
+
+    implicit val intIncrementable = new Incrementable[Int] {
+      override def zero: Int = 0
+      override def succ(a: Int): Int = a + 1
+    }
+
+    val charIncrementable = new Incrementable[Char] {
+      override def zero: Char = 'a'
+      override def succ(a: Char): Char = (a.toInt + 1).toChar
+    }
+
+    implicit class Incr[A : Incrementable](a: A) {
+      private val incr = implicitly[Incrementable[A]]
+      def succ: A = incr.succ(a)
+    }
+
+    def labelTree[A, B](tree: Tree[A])(implicit inc: Incrementable[B]): Tree[(A, B)] = {
       import cats.data.State
 
-      def go[A](tree: Tree[A]): State[Int, Tree[(A, Int)]] = State[Int, Tree[(A, Int)]] { s1 =>
+      def go(tree: Tree[A]): State[B, Tree[(A, B)]] = State[B, Tree[(A, B)]] { s1 =>
         tree match {
-          case Leaf(i)      => (s1 + 1, leaf(i, s1))
+          case Leaf(i)      => (s1.succ, leaf(i, s1))
           case Branch(l, r) =>
             val (s2, ll) = go(l).run(s1).value
             val (s3, rl) = go(r).run(s2).value
@@ -507,18 +527,25 @@ object Chapter04_Monad extends App {
         }
       }
 
-      go(tree).runA(1).value
+      go(tree).runA(inc.zero).value
     }
 
     val t4 = labelTree(t1)
     val t5 = labelTree(t2)
     val t6 = labelTree(t3)
-    val t7 = labelTree(t0)
+    val t7 = labelTree(t3)(charIncrementable)
 
     println(s"t4: $t4")
     println(s"t5: $t5")
     println(s"t6: $t6")
     println(s"t7: $t7")
+
+    val t8 = labelTree(t0)
+    val t9 = labelTree(t0)(charIncrementable)
+
+    println(s"t8: $t8")
+    println(s"t9: $t9")
+
   }
 
 //  Syntax
