@@ -16,9 +16,7 @@ libraryDependencies += "org.typelevel" %% "cats-effect" % "0.9"
 
 libraryDependencies += "org.typelevel" %% "cats-effect-laws" % "0.9" % "test"
 
-scalacOptions += "-feature"
-
-scalacOptions += "-Ypartial-unification"
+scalacOptions ++= Seq("-feature", "-Ypartial-unification", "-Ystatistics:typer")
 
 // initialCommands in console := "import cats._, cats.implicits._"
 
