@@ -489,6 +489,18 @@ object Chapter04_Monad extends App {
       c <- branch(leaf(b - 1), leaf(b + 1))
     } yield c
 
+    def blowUp(t: Tree[Int]): Tree[Int] = for {
+      a <- t
+      b <- branch(leaf(a - 100), leaf(a + 100))
+      c <- branch(leaf(b -  10), leaf(b +  10))
+      d <- branch(leaf(c -   1), leaf(c +   1))
+    } yield d
+
+    def f1(t: Tree[Int]): Tree[Int] = for {
+      a <- t
+      b <- branch(leaf(a - 1), leaf(a + 1))
+    } yield b
+
     println(s"t1: $t1")
     println(s"t2: $t2")
     println(s"t3: $t3")
@@ -545,7 +557,6 @@ object Chapter04_Monad extends App {
 
     println(s"t8: $t8")
     println(s"t9: $t9")
-
   }
 
 //  Syntax
