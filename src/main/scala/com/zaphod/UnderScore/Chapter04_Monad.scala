@@ -443,6 +443,7 @@ object Chapter04_Monad extends App {
 
   object TreeMonad {
     import cats.Monad
+    import cats.syntax.applicative._
 
     sealed trait Tree[+A]
     final case class Branch[A](l: Tree[A], r: Tree[A]) extends Tree[A]
@@ -487,6 +488,18 @@ object Chapter04_Monad extends App {
       b <- branch(leaf(a - 10), leaf(a + 10))
       c <- branch(leaf(b - 1), leaf(b + 1))
     } yield c
+
+    def blowUp(t: Tree[Int]): Tree[Int] = for {
+      a <- t
+      b <- branch(leaf(a - 100), leaf(a + 100))
+      c <- branch(leaf(b -  10), leaf(b +  10))
+      d <- branch(leaf(c -   1), leaf(c +   1))
+    } yield d
+
+    def f1(t: Tree[Int]): Tree[Int] = for {
+      a <- t
+      b <- branch(leaf(a - 1), leaf(a + 1))
+    } yield b
 
     println(s"t1: $t1")
     println(s"t2: $t2")
@@ -572,4 +585,3 @@ object Chapter04_Monad extends App {
   StateMonad
   TreeMonad
 }
-
