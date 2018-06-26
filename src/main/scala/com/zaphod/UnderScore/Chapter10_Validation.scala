@@ -13,6 +13,8 @@ object Chapter10_Validation extends App {
     sealed trait Predicate[E, A] {
       import Predicate._
 
+      def run(implicit s: Semigroup[E]): A => Either[E, A] = (a: A) => this(a).toEither
+
       def apply(a: A)(implicit s: Semigroup[E]): Validated[E, A] =
         this match {
           case Pure(f)   => f(a)
@@ -165,7 +167,48 @@ object Chapter10_Validation extends App {
     println(s"user2: $user2")
   }
 
-  PredicateUse
+  object WithKleisli {
+    import cats.data.{Kleisli, NonEmptyList}
+    import cats.instances.either._
 
+
+    import Pred._
+    import CheckUse.{longerThan, alphaNumeric, contains, containsOnce, error, User}
+
+    type Errors    = NonEmptyList[String]
+    type Result[A] = Either[Errors, A]
+    type Check[A, B] = Kleisli[Result, A, B]
+
+    def check[A, B](f: A => Result[B]): Check[A, B] = Kleisli(f)
+    def checkPred[A](p: Predicate[Errors, A]): Check[A, A] = Kleisli[Result, A, A](p.run)
+
+    val checkUsername: Check[String, String] = checkPred(longerThan(2) and alphaNumeric)
+
+    val splitMail: Check[String, (String, String)] = check(_.split('@') match {
+      case Array(name, domain) => Right((name, domain))
+      case _                   => Left(error(s"Must contain a '@' character"))
+    })
+    val checkLeft: Check[String, String]  = checkPred(longerThan(0))
+    val checkRight: Check[String, String] = checkPred(longerThan(2) and contains('.'))
+    val joinMail: Check[(String, String), String]   = check {
+      case (l, r) => (checkLeft(l), checkRight(r)).mapN(_ + '@' + _)
+    }
+    val checkAt: Check[String, String]  = checkPred(containsOnce('@'))
+    val checkEmail: Check[String, String] = checkAt andThen splitMail andThen joinMail
+
+    def createUser(username: String, email: String): Either[Errors, User] = {
+      (checkUsername.run(username), checkEmail.run(email)).mapN(User)
+    }
+
+    val user1 = createUser("John", "john@doe.com")
+    val user2 = createUser("", "honk@example.com")
+
+    println(s"user1: $user1")
+    println(s"user2: $user2")
+  }
+
+  PredicateUse
   CheckUse
+
+  WithKleisli
 }
