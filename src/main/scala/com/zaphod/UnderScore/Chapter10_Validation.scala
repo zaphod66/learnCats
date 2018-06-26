@@ -137,7 +137,7 @@ object Chapter10_Validation extends App {
 
     final case class User(username: String, email: String)
 
-    val checkUsername: Check[Errors, String, String] = Check(longerThan(3) and alphaNumeric)
+    val checkUsername: Check[Errors, String, String] = Check(longerThan(2) and alphaNumeric)
 
     val splitEmail: Check[Errors, String, (String, String)] = Check[Errors, String, (String, String)] { s =>
       s.split('@') match {
@@ -147,7 +147,7 @@ object Chapter10_Validation extends App {
     }
 
     val checkLeft: Check[Errors, String, String] = Check(longerThan(0))
-    val checkRight: Check[Errors, String, String] = Check(longerThan(3) and contains('.'))
+    val checkRight: Check[Errors, String, String] = Check(longerThan(2) and contains('.'))
 
     val joinEmail: Check[Errors, (String, String), String] = Check {
       case (l, r) => (checkLeft(l), checkRight(r)).mapN(_ + "@" + _)
@@ -157,7 +157,15 @@ object Chapter10_Validation extends App {
 
     def createUser(username: String, email: String): Validated[Errors, User] =
       (checkUsername(username), checkEmail(email)).mapN(User)
+
+    val user1 = createUser("John", "john@doe.com")
+    val user2 = createUser("", "honk@example.com")
+
+    println(s"user1: $user1")
+    println(s"user2: $user2")
   }
 
   PredicateUse
+
+  CheckUse
 }
