@@ -178,6 +178,35 @@ object Chapter11_CRDTs extends App {
     }
   }
 
+  object GCounterTypeClassUse {
+
+    import GCounterTypeClass.GCounter
+    import GCounterTypeClass.gcounterInstance
+    import cats.instances.int._
+    import cats.instances.map._
+
+    val c1 = Map("a" -> 7, "b" -> 3)
+    val c2 = Map("a" -> 2, "b" -> 5)
+
+    val counter: GCounter[Map, String, Int] = GCounter[Map, String, Int]
+
+//    val c3     = counter.increment(c1)("c", 3)
+//    val c4     = counter.increment(c2)("b", 1)x
+//    val merged = counter.merge(c3, c4)
+//    val total  = counter.total(merged)
+
+//    val c4     = counter.increment(c2)("b", 1)
+//    val merged = counter.merge(c3, c4)
+//    val total  = counter.total(merged)
+//
+//    println(s"c1: $c1, c3: $c3")
+//    println(s"c2: $c2, c4: $c4")
+//    println(s"merged: $merged - total: $total")
+
+  }
+
   StartUse
   GCounterTypeClass
+  println("==========")
+  GCounterTypeClassUse
 }
