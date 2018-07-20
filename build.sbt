@@ -20,6 +20,16 @@ libraryDependencies += "org.typelevel" %% "cats-effect" % "0.9"
 
 libraryDependencies += "org.typelevel" %% "cats-effect-laws" % "0.9" % "test"
 
+val scalazVersion = "7.2.21"
+
+libraryDependencies ++= Seq(
+  "org.scalaz" %% "scalaz-core" % scalazVersion,
+  "org.scalaz" %% "scalaz-concurrent" % scalazVersion,
+  "org.scalaz" %% "scalaz-effect" % scalazVersion,
+  //  "org.scalaz" %% "scalaz-typelevel" % scalazVersion,
+  "org.scalaz" %% "scalaz-ioeffect" % "2.1.0",
+)
+
 scalacOptions ++= Seq("-feature", "-deprecation", "-Ypartial-unification")
 
 // scalacOptions += "-Ystatistics:typer"
