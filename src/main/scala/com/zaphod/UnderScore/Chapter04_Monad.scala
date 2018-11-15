@@ -501,6 +501,7 @@ object Chapter04_Monad extends App {
       b <- branch(leaf(a - 1), leaf(a + 1))
     } yield b
 
+    println(s"t0: $t0")
     println(s"t1: $t1")
     println(s"t2: $t2")
     println(s"t3: $t3")
