@@ -1,5 +1,7 @@
 package com.zaphod.stuff
 
+import cats.free.Free
+
 object StdinTest extends App {
 
 //val lines = io.Source.stdin.getLines
