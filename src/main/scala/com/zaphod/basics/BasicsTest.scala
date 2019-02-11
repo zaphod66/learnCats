@@ -72,7 +72,7 @@ Monoid[Option[Int]].combine(a, b)
 
   a |+| b
 
-  val l1 = List(1, 2, 3).map(Option(_)).filter(item => item == 1)
+//  val l1 = List(1, 2, 3).map(Option(_)).filter(item => item == 1)
 
 import cats.Eq
 import cats.instances.int._
