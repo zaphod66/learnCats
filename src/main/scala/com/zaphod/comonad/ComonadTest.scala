@@ -2,6 +2,8 @@
 
 package com.zaphod.comonad
 
+import scala.collection.mutable
+
 object ComonadTest extends App {
 
   object Zipper {
@@ -53,6 +55,7 @@ object ComonadTest extends App {
     import scala.language.higherKinds
     import cats.{Comonad, Functor}
     import cats.syntax.functor._
+    import cats.instances.list._
 
     //    cojoin>
 //    - Since we are fixing S we want to generate Store[S, Store[S, A]].
@@ -63,9 +66,23 @@ object ComonadTest extends App {
     case class Store[S, A](lookup: S => A)(val index: S) {
       lazy val counit: A = lookup(index)
       lazy val coflatten: Store[S, Store[S, A]] = Store(Store(lookup))(index)
-      def coflatMap[B](f: Grid[A] => B): Store[S, B] = map(coflatten(this))(f)
-      def map[B](f: A => B): Store[S, B] = Store(lookup andThen f)(index)
+      def coflatMap[B](f: Store[S, A] => B): Store[S, B] = coflatten.map(f)
+      def map[B](f: A => B): Store[S, B] = Store(Store.memorize(lookup andThen f))(index) //Store(lookup andThen f)(index)
       def experiment[F[_] : Functor](fn: S => F[S]): F[A] = fn(index).map(lookup)
+    }
+
+    object Store {
+      def memorize[I, O](f: I => O): I => O = new mutable.HashMap[I, O] {
+        override def apply(key: I): O = getOrElseUpdate(key, f(key))
+//        key: I => getOrElseUpdate(key, f(key))
+      }
+
+      implicit def StoreComonadInstance[S]: Comonad[Store[S, ?]] = new Comonad[Store[S, ?]] {
+        override def extract[A](fa: Store[S, A]): A = fa.counit
+//        override def coflatMap[A, B](fa: Store[S, A])(f: Store[S, A] => B): Store[S, B] = map(fa.coflatten)(f)
+        override def coflatMap[A, B](fa: Store[S, A])(f: Store[S, A] => B): Store[S, B] = fa.coflatMap(f)
+        override def map[A, B](fa: Store[S, A])(f: A => B): Store[S, B] = fa.map(f)
+      }
     }
 
     type Coord   = (Int, Int)
@@ -96,6 +113,59 @@ object ComonadTest extends App {
     }
 
     def step(grid: Grid[Boolean]): Grid[Boolean] = grid.coflatMap(conway)
+
+    def render(plane: Grid[Boolean]): String = {
+      val extend = 20
+
+      val coords: List[Coord] = (for {
+        x <- 0 until extend
+        y <- 0 until extend
+      } yield (x, y)).toList
+
+      def cellString(value: Boolean): String = if (value) "X" else "."
+
+      val cells = plane.experiment[List] { _ => coords } map cellString
+
+      cells.grouped(extend).map(_.mkString).mkString("\n")
+    }
+
+    val glider = Map(
+      (1, 0) -> true,
+      (2, 1) -> true,
+      (0, 2) -> true,
+      (1, 2) -> true,
+      (2, 2) -> true
+    )
+
+    val blinker = Map(
+      (0, 0) -> true,
+      (1, 0) -> true,
+      (2, 0) -> true
+    )
+
+    implicit class InitOps(pairs: Map[Coord, Boolean]) {
+      def at(coord: Coord): Map[Coord, Boolean] = pairs.map {
+        case ((x, y), v) => ((x + coord._1, y + coord._2), v)
+      }
+    }
+
+    val initialState = (glider at(0,0)) ++ (blinker at(15, 5))
+
+    def gameLoop(): Unit = {
+      var current = Store[Coord, Boolean](coord => initialState.getOrElse(coord, false))((0, 0))
+
+      while (true) {
+        current = step(current)
+        val rendered = render(current)
+
+        println("\033\143") // clear terminal
+        println(rendered)
+
+        Thread.sleep(300)
+      }
+    }
+
+    gameLoop()
   }
 
   Zipper
