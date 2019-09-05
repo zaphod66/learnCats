@@ -7,7 +7,7 @@ class BlingString(val str: String) extends AnyVal {
 }
 
 object PimpMyLibTest extends App {
-  implicit def BlingYoString(str: String): BlingString = new BlingString(str)
+  implicit def BlingToString(str: String): BlingString = new BlingString(str)
 
   // implicit value class is recommended to avoid runtime creation of wrappers
   // http://docs.scala-lang.org/overviews/core/value-classes.html
