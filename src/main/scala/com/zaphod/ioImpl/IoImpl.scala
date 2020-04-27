@@ -52,17 +52,25 @@ object IO {
         }
     }
 
-    loop(io, List.empty)
+    loop(io, List.empty[Any => IO[Any]])
+  }
+
+  implicit class IOSyntax[A](io: IO[A]) {
+    def flatMap[B](f: A => IO[B]): IO[B] = IO.flatMap(io)(f)
+    def >>[B](fb: IO[B]): IO[B] = IO.flatMap(io)(_ => fb)
+    def unsafeRunSync(): A = IO.unsafeRunSync(io)
   }
 }
 
 object IoImpl extends App {
-  def read = IO(scala.io.StdIn.readLine)
-  def put[A](v: A) = IO(println(v))
-  def prompt = IO.flatMap(put("What is your name?"))(_ => read)
-  def hello = IO.flatMap(prompt)(n => put(s"Hello $n!"))
+  import IO._
 
-  println(s"hello: $hello")
+  def read: IO[String]       = IO(scala.io.StdIn.readLine)
+  def put[A](v: A): IO[Unit] = IO(println(v))
+  def prompt: IO[String]     = put("What is your name?") >> read
+  def hello: IO[Unit]        = prompt.flatMap(n => put(s"Hello $n!"))
 
-  IO.unsafeRunSync(hello)
+//  println(s"hello: $hello")
+
+  hello.unsafeRunSync()
 }
