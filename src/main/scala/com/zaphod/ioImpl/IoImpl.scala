@@ -1,25 +1,18 @@
 package com.zaphod.ioImpl
 
+import scala.util.control.NonFatal
+
 // implementation of simple (!) IO runtime
 // Fabio Labella - How to Fibers work (Scala World 2019)
 // see: https://www.youtube.com/watch?v=x5_MmZVLiSM
-
-// isomorphic to '() => A'
-//trait IO[_] {
-//  def delay[A](a: => A): IO[A]
-//
-//  def pure[A](a: A): IO[A]
-//  def flatMap[A, B](fa: IO[A])(f: A => IO[B]): IO[B]
-//
-//  def unsafeRunSync[A](fa: IO[A]): A
-//}
-
-// Data type
 
 sealed trait IO[+A]
 case class FlatMap[B, +A](io: IO[B], k: B => IO[A]) extends IO[A]
 case class Pure[+A](v: A) extends IO[A]
 case class Delay[+A](eff: () => A) extends IO[A]
+
+case class RaiseError(e: Throwable) extends IO[Nothing]
+case class HandleErrorWith[+A](io: IO[A], k: Throwable => IO[A]) extends IO[A]
 
 object IO {
   implicit class RichList[A](l: List[A]) {
@@ -38,22 +31,39 @@ object IO {
   def map[A, B](fa: IO[A])(f: A => B): IO[B] = flatMap(fa)(a => pure(f(a)))
 
   def unsafeRunSync[A](io: IO[A]): A = {
-    def loop(current: IO[Any], stack: List[Any => IO[Any]]): A = current match {
+    sealed trait Bind {
+      def isHandler: Boolean = this.isInstanceOf[Bind.H]
+    }
+    object Bind {
+      case class K(f: Any => IO[Any]) extends Bind
+      case class H(f: Throwable => IO[Any]) extends Bind
+    }
+
+    def loop(current: IO[Any], stack: List[Bind]): A = current match {
       case FlatMap(io, k) =>
-        loop(io, stack.push(k))
+        loop(io, stack.push(Bind.K(k)))
+      case HandleErrorWith(io, h) =>
+        loop(io, stack.push(Bind.H(h)))
       case Delay(body) =>
-        val res = body()
-        loop(pure(res), stack)
+        try {
+          val res = body()
+          loop(pure(res), stack)
+        } catch {
+          case NonFatal(e) => loop(RaiseError(e), stack)
+        }
       case Pure(v) =>
-        stack.pop match {
-          case None                => v.asInstanceOf[A]
-          case Some((bind, stack)) =>
-            val nextIO = bind(v)
-            loop(nextIO, stack)
+        stack.dropWhile(_.isHandler) match {
+          case Nil => v.asInstanceOf[A]
+          case Bind.K(f) :: stack => loop(f(v), stack)
+        }
+      case RaiseError(e) =>
+        stack.dropWhile(!_.isHandler) match {
+          case Nil => throw e
+          case Bind.H(f) :: stack => loop(f(e), stack)
         }
     }
 
-    loop(io, List.empty[Any => IO[Any]])
+    loop(io, List.empty[Bind])
   }
 
   implicit class IOSyntax[A](io: IO[A]) {
@@ -67,18 +77,18 @@ object IO {
 object IoImpl extends App {
   import IO._
 
-  val read: IO[String]       = IO(scala.io.StdIn.readLine)
-  def printStrLn[A](v: A): IO[Unit] = IO(println(v))
-  val prompt: IO[String]     = printStrLn("What is your name?") >> read
-  val hello: IO[Unit]        = prompt.flatMap(n => printStrLn(s"Hello $n!"))
+  val read: IO[String]   = IO(scala.io.StdIn.readLine)
+  def putStrLn[A](v: A): IO[Unit] = IO(println(v))
+  val prompt: IO[String] = putStrLn("What is your name?") >> read
+  val hello: IO[Unit]    = prompt.flatMap(n => putStrLn(s"Hello $n!"))
 
-//  println(s"hello: $hello")
+  println(s"hello: $hello")
 
-//  hello.unsafeRunSync()
+  hello.unsafeRunSync()
 
   val elem = IO(0)
   val succ = List.fill(10000)(1).foldRight(elem)((i, s) => s.map(_ + i))
-  val print = succ.flatMap(i => printStrLn(s"Sum: $i"))
+  val print = succ.flatMap(i => putStrLn(s"Sum: $i"))
 
 //  println(print)
 
