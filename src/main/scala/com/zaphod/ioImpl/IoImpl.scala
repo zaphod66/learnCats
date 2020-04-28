@@ -88,7 +88,7 @@ object IoImpl extends App {
 
   println(s"hello: $hello")
 
-  hello.unsafeRunSync()
+//  hello.unsafeRunSync()
 
   val num1 = IO("boom")
   val boom = num1.map(_.toInt)
@@ -96,7 +96,18 @@ object IoImpl extends App {
   val out1 = save.flatMap(putStrLn)
 
   out1.unsafeRunSync()
-//  boom.flatMap(putStrLn).unsafeRunSync()
+  //  boom.flatMap(putStrLn).unsafeRunSync()
+
+  def parse(s: String): IO[Int] = IO(s.toInt).handleErrorWith(_ => IO(0))
+  val out2 = for {
+    _ <- putStrLn("Enter a number: ")
+    s <- read
+    i <- parse(s)
+    _ <- putStrLn(s"$s -> $i")
+  } yield ()
+
+  out2.unsafeRunSync()
+  out2.unsafeRunSync()
 
   val elem = IO(0)
   val succ = List.fill(10000)(1).foldRight(elem)((i, s) => s.map(_ + i))
