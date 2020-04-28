@@ -29,7 +29,7 @@ object IO {
   def pure[A](a: A): IO[A] = Pure(a)
   def flatMap[A, B](fa: IO[A])(f: A => IO[B]): IO[B] = FlatMap(fa, f)
   def map[A, B](fa: IO[A])(f: A => B): IO[B] = flatMap(fa)(a => pure(f(a)))
-  def handleErrorWith[A](fa: IO[A])(f: Throwable => IO[A]) = HandleErrorWith(fa, f)
+  def handleErrorWith[A](fa: IO[A])(f: Throwable => IO[A]):IO[A] = HandleErrorWith(fa, f)
 
   def unsafeRunSync[A](io: IO[A]): A = {
     sealed trait Bind {
