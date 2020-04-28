@@ -12,7 +12,7 @@ case class Pure[+A](v: A) extends IO[A]
 case class Delay[+A](eff: () => A) extends IO[A]
 
 case class RaiseError(e: Throwable) extends IO[Nothing]
-case class HandleErrorWith[+A](io: IO[A], k: Throwable => IO[A]) extends IO[A]
+case class HandleErrorWith[+A](io: IO[A], f: Throwable => IO[A]) extends IO[A]
 
 object IO {
   implicit class RichList[A](l: List[A]) {
@@ -29,6 +29,7 @@ object IO {
   def pure[A](a: A): IO[A] = Pure(a)
   def flatMap[A, B](fa: IO[A])(f: A => IO[B]): IO[B] = FlatMap(fa, f)
   def map[A, B](fa: IO[A])(f: A => B): IO[B] = flatMap(fa)(a => pure(f(a)))
+  def handleErrorWith[A](fa: IO[A])(f: Throwable => IO[A]) = HandleErrorWith(fa, f)
 
   def unsafeRunSync[A](io: IO[A]): A = {
     sealed trait Bind {
@@ -70,6 +71,9 @@ object IO {
     def map[B](f: A => B): IO[B] = IO.map(io)(f)
     def flatMap[B](f: A => IO[B]): IO[B] = IO.flatMap(io)(f)
     def >>[B](fb: IO[B]): IO[B] = IO.flatMap(io)(_ => fb)
+
+    def handleErrorWith(f: Throwable => IO[A]): IO[A] = IO.handleErrorWith(io)(f)
+
     def unsafeRunSync(): A = IO.unsafeRunSync(io)
   }
 }
@@ -85,6 +89,14 @@ object IoImpl extends App {
   println(s"hello: $hello")
 
   hello.unsafeRunSync()
+
+  val num1 = IO("boom")
+  val boom = num1.map(_.toInt)
+  val save = boom.handleErrorWith(_ => IO(0))
+  val out1 = save.flatMap(putStrLn)
+
+  out1.unsafeRunSync()
+//  boom.flatMap(putStrLn).unsafeRunSync()
 
   val elem = IO(0)
   val succ = List.fill(10000)(1).foldRight(elem)((i, s) => s.map(_ + i))
