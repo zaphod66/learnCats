@@ -14,6 +14,8 @@ case class Delay[+A](eff: () => A) extends IO[A]
 case class RaiseError(e: Throwable) extends IO[Nothing]
 case class HandleErrorWith[+A](io: IO[A], f: Throwable => IO[A]) extends IO[A]
 
+case class Async[+A](k: (Either[Throwable, A] => Unit) => Unit) extends IO[A]
+
 object IO {
   implicit class RichList[A](l: List[A]) {
     def push(a: => A): List[A]    = a :: l
@@ -67,6 +69,39 @@ object IO {
     loop(io, List.empty[Bind])
   }
 
+  def unsafeRunAsync[A](io: IO[A], cb: Either[Throwable, A] => Unit): Unit = {
+    def loop(current: IO[Any], stack: List[Any => IO[Any]], cb: Either[Throwable, A] => Unit): Unit = current match {
+      case FlatMap(io, k) =>
+        loop(io, stack.push(k), cb)
+      case Delay(body)    =>
+        try {
+          val res = body()
+          loop(pure(res), stack, cb)
+        } catch {
+          case NonFatal(e) => loop(RaiseError(e), stack, cb)
+        }
+      case Async(asyncProcess) =>
+        val restOfComputation = { res: Either[Throwable, Any] =>
+          val nextIO = res.fold(RaiseError, pure)
+          loop(nextIO, stack, cb)
+        }
+        asyncProcess(restOfComputation)
+      case HandleErrorWith(io, h) => ()
+      case Pure(v) =>
+        stack.pop match {
+          case None => cb(Right(v.asInstanceOf[A]))
+          case Some((bind, stack)) =>
+            val nextIO = bind(v)
+            loop(nextIO, stack, cb)
+        }
+
+      case RaiseError(e) =>
+        cb(Left(e))
+    }
+
+    loop(io, List.empty, cb)
+  }
+
   implicit class IOSyntax[A](io: IO[A]) {
     def map[B](f: A => B): IO[B] = IO.map(io)(f)
     def flatMap[B](f: A => IO[B]): IO[B] = IO.flatMap(io)(f)
@@ -75,6 +110,7 @@ object IO {
     def handleErrorWith(f: Throwable => IO[A]): IO[A] = IO.handleErrorWith(io)(f)
 
     def unsafeRunSync(): A = IO.unsafeRunSync(io)
+    def unsafeRunAsync(cb: Either[Throwable, A] => Unit): Unit = IO.unsafeRunAsync(io, cb)
   }
 }
 
@@ -86,7 +122,7 @@ object IoImpl extends App {
   val prompt: IO[String] = putStrLn("What is your name?") >> read
   val hello: IO[Unit]    = prompt.flatMap(n => putStrLn(s"Hello $n!"))
 
-  println(s"hello: $hello")
+//  println(s"hello: $hello")
 
 //  hello.unsafeRunSync()
 
@@ -111,12 +147,16 @@ object IoImpl extends App {
 
   val elem = IO(0)
   val succ = List.fill(10000)(1).foldRight(elem)((i, s) => s.map(_ + i))
-  val print = succ.flatMap(i => putStrLn(s"Sum: $i"))
+  val out3 = succ.flatMap(i => putStrLn(s"Sum: $i"))
 
 //  println(print)
 
   val s = System.currentTimeMillis()
-  print.unsafeRunSync()
+  out3.unsafeRunSync()
   val e = System.currentTimeMillis()
   println(s"took: " + (e - s))
+
+  succ.unsafeRunAsync(_.fold(_ => println("fail"), i => println(s"succ: $i")))
+
+  println("---------------------------")
 }
