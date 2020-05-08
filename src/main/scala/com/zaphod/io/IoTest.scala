@@ -49,11 +49,11 @@ object IoTest extends App {
   val plainId  = UserId(_)
   val plainStr = Username(_)
 
-  val liftedId  = Functor[IO].lift(plainId)
-  val liftedStr = Functor[IO].lift(plainStr)
+  val liftedId   = Functor[IO].lift(plainId)
+  val liftedName = Functor[IO].lift(plainStr)
 
   val retrievedUserId   = liftedId(testDB.retrieveInt())
-  val retrievedUsername = liftedStr(testDB.retrieveStr())
+  val retrievedUsername = liftedName(testDB.retrieveStr())
 
   val retrievedUser = Applicative[IO].map2(retrievedUserId, retrievedUsername)(User)
 
