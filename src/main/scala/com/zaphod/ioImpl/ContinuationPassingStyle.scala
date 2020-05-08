@@ -11,11 +11,12 @@ object ContinuationPassingStyle {
     rest(res)
   }
 
-  def computation(f: Int => Unit): Unit = add(1, 2) { sum =>
-    twice(sum) { res =>
-      f(res)
+  def computation(f: Int => Unit): Unit =
+    add(1, 2) { sum =>
+      twice(sum) { res =>
+        f(res)
+      }
     }
-  }
 
   def call(): Unit = computation(res => println(s"res: $res"))
 }
