@@ -12,6 +12,8 @@ dist
 /bin/
 *.class
 *.log
+.metals/
+.vscode/
 
 # sbt specific
 .cache
