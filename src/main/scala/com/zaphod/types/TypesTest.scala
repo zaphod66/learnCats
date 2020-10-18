@@ -18,19 +18,21 @@ object TypesTest extends App {
 
   val f1 = (i: Int) => i.toString
 
-  def paramInfo[T](x: T)(implicit tag: TypeTag[T]): Unit = {
-    val targs = tag.tpe match { case TypeRef(tpe, sym, args) => (tpe, sym, args) }
+  def typeInfo[T](x: T)(implicit tag: TypeTag[T]): (T, Type, Symbol, List[Type]) = {
+    tag.tpe match { case TypeRef(tpe, sym, args) => (x, tpe, sym, args) }
+  }
 
-    println(s"Type of $x is ${tag.tpe} and has type args ${targs._3} (tpe = ${targs._1}) (sym == ${targs._2})")
+  def printTypeInfo[T](info: (T, Type, Symbol, List[Type]))(implicit tag: TypeTag[T]): Unit = {
+    println(s"Type of ${info._1} is ${tag.tpe} and has type args ${info._4} (tpe = ${info._2}) (sym = ${info._3})")
   }
 
   println(s"o1t1 = ${o1t1.tpe}")
 
-  paramInfo(o1)
-  paramInfo(oo1)
-  paramInfo(ss1)
-  paramInfo(nn2)
-  paramInfo(eoi1)
-  paramInfo(eoi2)
-  paramInfo(f1)
+  printTypeInfo(typeInfo(o1))
+  printTypeInfo(typeInfo(oo1))
+  printTypeInfo(typeInfo(ss1))
+  printTypeInfo(typeInfo(nn2))
+  printTypeInfo(typeInfo(eoi1))
+  printTypeInfo(typeInfo(eoi2))
+  printTypeInfo(typeInfo(f1))
 }

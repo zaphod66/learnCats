@@ -14,15 +14,15 @@ libraryDependencies += "org.scalacheck" %% "scalacheck" % "1.14.0" % "test"
 
 libraryDependencies += "commons-io" % "commons-io" % "2.3"
 
-libraryDependencies += "org.typelevel" %% "cats-core" % "1.5.0"
+libraryDependencies += "org.typelevel" %% "cats-core" % "1.6.1"
 
-libraryDependencies += "org.typelevel" %% "cats-free" % "1.5.0"
-
-libraryDependencies += "org.typelevel" %% "cats-effect" % "1.2.0"
-
-libraryDependencies += "org.typelevel" %% "cats-effect-laws" % "1.2.0"
+libraryDependencies += "org.typelevel" %% "cats-free" % "1.6.1"
 
 libraryDependencies += "org.scalaz" %% "scalaz-zio" % "0.10"
+
+libraryDependencies += "org.typelevel" %% "cats-effect" % "1.4.0"
+
+libraryDependencies += "org.typelevel" %% "cats-effect-laws" % "1.3.1"
 
 scalacOptions ++= Seq("-feature", "-deprecation", "-Ypartial-unification")
 
