@@ -18,9 +18,11 @@ libraryDependencies += "org.typelevel" %% "cats-core" % "1.5.0"
 
 libraryDependencies += "org.typelevel" %% "cats-free" % "1.5.0"
 
-libraryDependencies += "org.typelevel" %% "cats-effect" % "1.1.0"
+libraryDependencies += "org.typelevel" %% "cats-effect" % "1.2.0"
 
-libraryDependencies += "org.typelevel" %% "cats-effect-laws" % "1.1.0" % "test"
+libraryDependencies += "org.typelevel" %% "cats-effect-laws" % "1.2.0"
+
+libraryDependencies += "org.scalaz" %% "scalaz-zio" % "0.10"
 
 scalacOptions ++= Seq("-feature", "-deprecation", "-Ypartial-unification")
 
