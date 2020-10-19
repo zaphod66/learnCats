@@ -82,11 +82,16 @@ object Parser {
   private def fractional[_: P]    = P( "." ~ digits )
   private def integral[_: P]      = P( "0" | CharIn("1-9")  ~ digits.? )
 
-  private def number[_: P] = P(  CharIn("+\\-").? ~ integral ~ fractional.? ~ exponent.? ).!.map(
+  private def number[_: P]: P[Term] = P(  CharIn("+\\-").? ~ integral ~ fractional.? ~ exponent.? ).!.map(
     x => Num(x.toDouble)
   )
 
-  def parse(str: String): Either[String, Term] = fastparse.parse(str, number(_)) match {
+  private def fac[_: P]: P[Term] = P( number )
+  private def mul[_: P]: P[Term] = P( fac ~ space.? ~ (CharIn("*") ~ space.? ~/ fac)).map { m =>
+    Mul(m._1, m._2)
+  }
+
+  def parse(str: String): Either[String, Term] = fastparse.parse(str, mul(_)) match {
     case Parsed.Success(t, _)    => Right(t)
     case Parsed.Failure(_, _, e) => Left(e.trace().longAggregateMsg)
   }
@@ -122,7 +127,8 @@ object FunctionDerivation extends App {
 }
 
 object StringToTerm extends App {
-  val str = "-1.5 * xˆ2 + 1.0"
+//  val str = "-1.5 * xˆ2 + 1.0"
+  val str = "-1.5 * 1.0"
   val res = Parser.parse(str)
 
   import TermShow._
