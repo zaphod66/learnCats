@@ -1,7 +1,7 @@
 package com.zaphod.blocker
 
 import java.util.concurrent.Executors
-
+/*
 import cats.effect.{ContextShift, ExitCode, IO, IOApp, Resource, Sync, Blocker}
 
 import scala.concurrent.ExecutionContext
@@ -49,3 +49,4 @@ object BlockerTest extends IOApp{
     jdbcBlocker.use(_.execute).as(ExitCode.Success)
   }
 }
+*/

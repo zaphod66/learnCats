@@ -23,7 +23,7 @@ object TermShow {
   implicit val showVar: Show[Var] = Show.show(v => v.value.toString)
   implicit val showAdd: Show[Add] = Show.show(add => s"${add.a1.show} + ${add.a2.show}")
   implicit val showMul: Show[Mul] = Show.show(mul => s"${mul.m1.show} * ${mul.m2.show}")
-  implicit val showPow: Show[Pow] = Show.show(pow => s"${pow.v.show} ^ ${pow.n.show}")
+  implicit val showPow: Show[Pow] = Show.show(pow => s"${pow.v.show}^${pow.n.show}")
   implicit val showSin: Show[Sin] = Show.show(sin => s"sin(${sin.t.show})")
   implicit val showCos: Show[Cos] = Show.show(cos => s"cos(${cos.t.show})")
 
@@ -73,6 +73,25 @@ object Derive {
   }
 }
 
+object Parser {
+  import fastparse._, NoWhitespace._
+
+  private def space[_: P]         = P( CharsWhileIn(" \r\n", 0) )
+  private def digits[_: P]        = P( CharsWhileIn("0-9") )
+  private def exponent[_: P]      = P( CharIn("eE") ~ CharIn("+\\-").? ~ digits )
+  private def fractional[_: P]    = P( "." ~ digits )
+  private def integral[_: P]      = P( "0" | CharIn("1-9")  ~ digits.? )
+
+  private def number[_: P] = P(  CharIn("+\\-").? ~ integral ~ fractional.? ~ exponent.? ).!.map(
+    x => Num(x.toDouble)
+  )
+
+  def parse(str: String): Either[String, Term] = fastparse.parse(str, number(_)) match {
+    case Parsed.Success(t, _)    => Right(t)
+    case Parsed.Failure(_, _, e) => Left(e.trace().longAggregateMsg)
+  }
+}
+
 object FunctionDerivation extends App {
   val par1 = Add(Pow(Var('x'), Num(2)), Num(1))   // x^2 + 1
   val par2 = Add(Mul(Num(2.5), Pow(Var('x'), Num(3))), Add(Mul(Num(1.5), Pow(Var('x'), Num(2))), Num(1))) // 2.5*x^3 + 1.5*x^2 + 1
@@ -100,4 +119,17 @@ object FunctionDerivation extends App {
 
   println(s"${sinc.show}' => ${derive(sinc).show}")
   println(s"${root.show}' => ${derive(root).show}")
+}
+
+object StringToTerm extends App {
+  val str = "-1.5 * xˆ2 + 1.0"
+  val res = Parser.parse(str)
+
+  import TermShow._
+  import cats.syntax.show._
+
+  res.fold(
+    e => println(s"Error: $e"),
+    t => println(s"$str = ${t.show}")
+  )
 }
