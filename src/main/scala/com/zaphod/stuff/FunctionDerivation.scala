@@ -1,5 +1,7 @@
 package com.zaphod.stuff
 
+import scala.annotation.tailrec
+
 
 object Expr {
   sealed trait Term
@@ -90,15 +92,24 @@ object Parser {
   private def fractional[_: P]    = P( "." ~ digits )
   private def integral[_: P]      = P( "0" | CharIn("1-9")  ~ digits.? )
 
-  private def number[_: P]: P[Term] = P(  CharIn("+\\-").? ~ integral ~ fractional.? ~ exponent.? ).!.map(
+  private def num[_: P]: P[Num] = P(  CharIn("+\\-").? ~ integral ~ fractional.? ~ exponent.? ).!.map(
     x => Num(x.toDouble)
   )
+  private def vaz[_: P]: P[Var] = P( space.? ~ CharIn("a-z").! ).map( v => Var(v(0)) )
+  private def par[_: P]: P[Term] = P( "(" ~ add ~ ")" )
+  private def pow[_: P]: P[Term] = P( vaz ~ "^" ~ num ).map( e => Pow(e._1, e._2))
+  private def fac[_: P]: P[Term] = P( par | pow | vaz | num )
+  private def mul[_: P]: P[Term] = P( fac ~ space.? ~/ ("*" ~ space.? ~/ fac).? ).map {
+    case (t1, Some(t2)) => makeMul(t1, t2)
+    case (t1, None) => t1
+  }
+  private def add[_: P]: P[Term] = P( mul ~ space.? ~/ ("+" ~ space.? ~/ mul).? ).map {
+    case (t1, Some(t2)) => makeAdd(t1, t2)
+    case (t1, None) => t1
+  }
+  private def ter[_: P]: P[Term] = P( add ~ End )
 
-  private def par[_: P]: P[Term] = P( space.? ~ CharIn("a-z").! ).map( v => Var(v(0)) )
-  private def fac[_: P]: P[Term] = P( number )
-  private def mul[_: P]: P[Term] = P( fac ~ space.? ~ (CharIn("*") ~ space.? ~/ fac) ).map { m => makeMul(m._1, m._2) }
-
-  def parse(str: String): Either[String, Term] = fastparse.parse(str, mul(_)) match {
+  def parse(str: String): Either[String, Term] = fastparse.parse(str, ter(_)) match {
     case Parsed.Success(t, _)    => Right(t)
     case Parsed.Failure(_, _, e) => Left(e.trace().longAggregateMsg)
   }
@@ -138,11 +149,10 @@ object StringToTerm extends App {
   import Derive.derive
 
 //  val str = "-1.5 * xˆ2 + 1.0"
-  val str = "-1.5 * 2"
+  val str = "-1.5 * x^4 + 2.5 * x^3"
   val res = Parser.parse(str)
-  val der = res.map(derive)
 
-  import Expr._
+  import Expr.Term
 
   private def pp(termM: Either[String, Term]): String = {
     import TermShow._
@@ -154,7 +164,12 @@ object StringToTerm extends App {
     )
   }
 
+  @tailrec
+  def der(t: Term, n: Int): Term = { if (n <= 0) t else der(derive(t), n - 1) }
+
   println(s"str: $str")
-  println(s"res: ${pp(res)}")
-  println(s"der: ${pp(der)}")
+//  println(s"res: ${pp(res)}")
+//  println(s"de1: ${pp(res.map(der(_, 1)))}")
+//  println(s"de2: ${pp(res.map(der(_, 2)))}")
+  (0 to 4) foreach( i => println(s"de$i: ${pp(res.map(der(_, i)))}"))
 }
