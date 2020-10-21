@@ -1,15 +1,41 @@
 package com.zaphod.stuff
 
-sealed trait Term
-case class Num(value: Double) extends Term
-case class Var(value: Char) extends Term
-case class Add(a1: Term, a2: Term) extends Term
-case class Mul(m1: Term, m2: Term) extends Term
-case class Pow(v: Var, n: Num) extends Term
-case class Sin(t: Term) extends Term
-case class Cos(t: Term) extends Term
+
+object Expr {
+  sealed trait Term
+  case class Num(value: Double) extends Term
+  case class Var(value: Char) extends Term
+  case class Add(a1: Term, a2: Term) extends Term
+  case class Mul(m1: Term, m2: Term) extends Term
+  case class Pow(v: Var, n: Num) extends Term
+  case class Sin(t: Term) extends Term
+  case class Cos(t: Term) extends Term
+
+
+  def makeAdd(a1: Term, a2: Term): Term = (a1, a2) match {
+    case (Num(0), _) => a2
+    case (_, Num(0)) => a1
+    case _           => Add(a1, a2)
+  }
+
+  def makeMul(m1: Term, m2: Term): Term = (m1, m2) match {
+    case (Num(0), _)      => Num(0)
+    case (Num(1), _)      => m2
+    case (_, Num(0))      => Num(0)
+    case (_, Num(1))      => m1
+    case (Num(x), Num(y)) => Num(x * y)
+    case _                => Mul(m1, m2)
+  }
+
+  def makePow(v: Var, n: Num): Term = n match {
+    case Num(0) => Num(1)
+    case Num(1) => v
+    case _ => Pow(v, n)
+  }
+}
 
 object TermShow {
+  import Expr._
   import cats.Show
   import cats.syntax.show._
 
@@ -39,26 +65,7 @@ object TermShow {
 }
 
 object Derive {
-  private def makeAdd(a1: Term, a2: Term): Term = (a1, a2) match {
-    case (Num(0), _) => a2
-    case (_, Num(0)) => a1
-    case _           => Add(a1, a2)
-  }
-
-  private def makeMul(m1: Term, m2: Term): Term = (m1, m2) match {
-    case (Num(0), _)      => Num(0)
-    case (Num(1), _)      => m2
-    case (_, Num(0))      => Num(0)
-    case (_, Num(1))      => m1
-    case (Num(x), Num(y)) => Num(x * y)
-    case _                => Mul(m1, m2)
-  }
-
-  private def makePow(v: Var, n: Num): Term = n match {
-    case Num(0) => Num(1)
-    case Num(1) => v
-    case _ => Pow(v, n)
-  }
+  import Expr._
 
   def derive(term: Term): Term = {
     term match {
@@ -74,6 +81,7 @@ object Derive {
 }
 
 object Parser {
+  import Expr._
   import fastparse._, NoWhitespace._
 
   private def space[_: P]         = P( CharsWhileIn(" \r\n", 0) )
@@ -86,10 +94,9 @@ object Parser {
     x => Num(x.toDouble)
   )
 
+  private def par[_: P]: P[Term] = P( space.? ~ CharIn("a-z").! ).map( v => Var(v(0)) )
   private def fac[_: P]: P[Term] = P( number )
-  private def mul[_: P]: P[Term] = P( fac ~ space.? ~ (CharIn("*") ~ space.? ~/ fac)).map { m =>
-    Mul(m._1, m._2)
-  }
+  private def mul[_: P]: P[Term] = P( fac ~ space.? ~ (CharIn("*") ~ space.? ~/ fac) ).map { m => makeMul(m._1, m._2) }
 
   def parse(str: String): Either[String, Term] = fastparse.parse(str, mul(_)) match {
     case Parsed.Success(t, _)    => Right(t)
@@ -98,6 +105,8 @@ object Parser {
 }
 
 object FunctionDerivation extends App {
+  import Expr._
+
   val par1 = Add(Pow(Var('x'), Num(2)), Num(1))   // x^2 + 1
   val par2 = Add(Mul(Num(2.5), Pow(Var('x'), Num(3))), Add(Mul(Num(1.5), Pow(Var('x'), Num(2))), Num(1))) // 2.5*x^3 + 1.5*x^2 + 1
   val sin1 = Sin(Var('x'))
@@ -106,7 +115,6 @@ object FunctionDerivation extends App {
 
   import TermShow._
   import cats.syntax.show._
-
   import Derive.derive
 
   println(s"$par1 => ${par1.show}")
@@ -127,15 +135,26 @@ object FunctionDerivation extends App {
 }
 
 object StringToTerm extends App {
+  import Derive.derive
+
 //  val str = "-1.5 * xˆ2 + 1.0"
-  val str = "-1.5 * 1.0"
+  val str = "-1.5 * 2"
   val res = Parser.parse(str)
+  val der = res.map(derive)
 
-  import TermShow._
-  import cats.syntax.show._
+  import Expr._
 
-  res.fold(
-    e => println(s"Error: $e"),
-    t => println(s"$str = ${t.show}")
-  )
+  private def pp(termM: Either[String, Term]): String = {
+    import TermShow._
+    import cats.syntax.show._
+
+    termM.fold(
+      e => s"Error: $e",
+      t => t.show
+    )
+  }
+
+  println(s"str: $str")
+  println(s"res: ${pp(res)}")
+  println(s"der: ${pp(der)}")
 }
