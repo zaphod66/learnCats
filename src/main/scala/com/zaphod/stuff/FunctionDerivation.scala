@@ -13,11 +13,11 @@ object Expr {
   case class Sin(t: Term) extends Term
   case class Cos(t: Term) extends Term
 
-
   def makeAdd(a1: Term, a2: Term): Term = (a1, a2) match {
-    case (Num(0), _) => a2
-    case (_, Num(0)) => a1
-    case _           => Add(a1, a2)
+    case (Num(0), _)      => a2
+    case (_, Num(0))      => a1
+    case (Num(x), Num(y)) => Num(x + y)
+    case _                => Add(a1, a2)
   }
 
   def makeMul(m1: Term, m2: Term): Term = (m1, m2) match {
@@ -33,6 +33,18 @@ object Expr {
     case Num(0) => Num(1)
     case Num(1) => v
     case _ => Pow(v, n)
+  }
+
+  import cats.Monoid
+
+  val mulMonoid: Monoid[Term] = new Monoid[Term] {
+    override def empty: Term = Num(1.0)
+    override def combine(x: Term, y: Term): Term = makeMul(x, y)
+  }
+
+  val addMonoid: Monoid[Term] = new Monoid[Term] {
+    override def empty: Term = Num(0.0)
+    override def combine(x: Term, y: Term): Term = makeAdd(x, y)
   }
 }
 
@@ -99,14 +111,23 @@ object Parser {
   private def par[_: P]: P[Term] = P( "(" ~ add ~ ")" )
   private def pow[_: P]: P[Term] = P( vaz ~ "^" ~ num ).map( e => Pow(e._1, e._2))
   private def fac[_: P]: P[Term] = P( par | pow | vaz | num )
-  private def mul[_: P]: P[Term] = P( fac ~ space.? ~/ ("*" ~ space.? ~/ fac).? ).map {
+  private def mul1[_: P]: P[Term] = P( fac ~ space.? ~/ ("*" ~ space.? ~/ fac).? ).map {
     case (t1, Some(t2)) => makeMul(t1, t2)
     case (t1, None) => t1
   }
-  private def add[_: P]: P[Term] = P( mul ~ space.? ~/ ("+" ~ space.? ~/ mul).? ).map {
+  private def mul[_: P]: P[Term] = P( fac ~ space.? ~/ ("*" ~ space.? ~/ fac).rep ).map { s=>
+    s._2.fold(s._1)((t1, t2) => makeMul(t1, t2))
+  }
+
+  private def add1[_: P]: P[Term] = P( mul ~ space.? ~/ ("+" ~ space.? ~/ mul).? ).map {
     case (t1, Some(t2)) => makeAdd(t1, t2)
     case (t1, None) => t1
   }
+
+  private def add[_: P]: P[Term] = P( mul ~ space.? ~/ ("+" ~ space.? ~/ mul).rep ).map { s =>
+    s._2.toList.fold(s._1)((t1, t2) => makeAdd(t1, t2))
+  }
+
   private def ter[_: P]: P[Term] = P( add ~ End )
 
   def parse(str: String): Either[String, Term] = fastparse.parse(str, ter(_)) match {
@@ -148,8 +169,9 @@ object FunctionDerivation extends App {
 object StringToTerm extends App {
   import Derive.derive
 
-//  val str = "-1.5 * xˆ2 + 1.0"
-  val str = "-1.5 * x^4 + 2.5 * x^3"
+  val str = "-1.5 * x^3 + x^2 + x + 2"
+//  val str = "-1.5 * x^3 + 2.5 * x^2 + 1.5 * x^1"  //  fails
+//  val str = "-1.5 * x^3 + 2.5 * x^2"
   val res = Parser.parse(str)
 
   import Expr.Term
@@ -168,8 +190,5 @@ object StringToTerm extends App {
   def der(t: Term, n: Int): Term = { if (n <= 0) t else der(derive(t), n - 1) }
 
   println(s"str: $str")
-//  println(s"res: ${pp(res)}")
-//  println(s"de1: ${pp(res.map(der(_, 1)))}")
-//  println(s"de2: ${pp(res.map(der(_, 2)))}")
-  (0 to 4) foreach( i => println(s"de$i: ${pp(res.map(der(_, i)))}"))
+  (0 to 3) foreach( i => println(s"de$i: ${pp(res.map(der(_, i)))}"))
 }
