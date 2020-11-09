@@ -18,6 +18,8 @@ libraryDependencies += "org.typelevel" %% "cats-core" % "1.6.1"
 
 libraryDependencies += "org.typelevel" %% "cats-free" % "1.6.1"
 
+libraryDependencies += "org.typelevel" %% "cats-parse" % "0.0.1"
+
 libraryDependencies += "org.typelevel" %% "cats-effect" % "1.4.0"
 
 libraryDependencies += "org.typelevel" %% "cats-effect-laws" % "1.3.1" % "test"

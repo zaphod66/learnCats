@@ -2,7 +2,6 @@ package com.zaphod.stuff
 
 import scala.annotation.tailrec
 
-
 object Expr {
   sealed trait Term
   case class Num(value: Double) extends Term
@@ -94,46 +93,40 @@ object Derive {
   }
 }
 
-object Parser {
+object CatsParser {
   import Expr._
-  import fastparse._, NoWhitespace._
 
-  private def space[_: P]         = P( CharsWhileIn(" \r\n", 0) )
-  private def digits[_: P]        = P( CharsWhileIn("0-9") )
-  private def exponent[_: P]      = P( CharIn("eE") ~ CharIn("+\\-").? ~ digits )
-  private def fractional[_: P]    = P( "." ~ digits )
-  private def integral[_: P]      = P( "0" | CharIn("1-9")  ~ digits.? )
+  import cats.implicits.toBifunctorOps
 
-  private def num[_: P]: P[Num] = P(  CharIn("+\\-").? ~ integral ~ fractional.? ~ exponent.? ).!.map(
-    x => Num(x.toDouble)
-  )
-  private def vaz[_: P]: P[Var] = P( space.? ~ CharIn("a-z").! ).map( v => Var(v(0)) )
-  private def par[_: P]: P[Term] = P( "(" ~ add ~ ")" )
-  private def pow[_: P]: P[Term] = P( vaz ~ "^" ~ num ).map( e => Pow(e._1, e._2))
-  private def fac[_: P]: P[Term] = P( par | pow | vaz | num )
-  private def mul1[_: P]: P[Term] = P( fac ~ space.? ~/ ("*" ~ space.? ~/ fac).? ).map {
-    case (t1, Some(t2)) => makeMul(t1, t2)
-    case (t1, None) => t1
-  }
-  private def mul[_: P]: P[Term] = P( fac ~ space.? ~/ ("*" ~ space.? ~/ fac).rep ).map { s=>
-    s._2.fold(s._1)((t1, t2) => makeMul(t1, t2))
+  import cats.parse.{Parser => P, Parser1, Numbers}
+
+  private[this] val whitespace: Parser1[Unit] = P.charIn(" \t\r\n").void
+  private[this] val whitespaces0: P[Unit] = whitespace.rep.void
+
+  private def num: Parser1[Num]  = (whitespaces0.with1 *> Numbers.jsonNumber <* whitespaces0).map(x => Num(x.toDouble))
+  private def vaz: Parser1[Var]  = (whitespaces0.with1 *> P.charIn("xyz") <* whitespaces0).map(Var)
+  private def pow: Parser1[Term]  = ((vaz <* P.char('^')) ~ num).map(vn => makePow(vn._1, vn._2))
+  private def fac: Parser1[Term] = whitespaces0.with1 *> P.oneOf1(List(P.backtrack1(pow), vaz, num)) <* whitespaces0
+
+  private def mu1 = P.rep1Sep(fac, 1, P.char('*')).map { terms =>
+    terms.foldLeft[Term](Num(1.0)) {
+      case (acc, term) => makeMul(acc, term)
+    }
   }
 
-  private def add1[_: P]: P[Term] = P( mul ~ space.? ~/ ("+" ~ space.? ~/ mul).? ).map {
-    case (t1, Some(t2)) => makeAdd(t1, t2)
-    case (t1, None) => t1
+  private def mul = whitespaces0.with1 *> mu1 <* whitespaces0
+
+  private def add = P.rep1Sep(mul, 1, P.char('+')).map { terms =>
+    terms.foldLeft[Term](Num(0.0)) {
+      case (acc, term) => makeAdd(acc, term)
+    }
   }
 
-  private def add[_: P]: P[Term] = P( mul ~ space.? ~/ ("+" ~ space.? ~/ mul).rep ).map { s =>
-    s._2.toList.fold(s._1)((t1, t2) => makeAdd(t1, t2))
-  }
+  private val parser = P.oneOf1( List(P.backtrack1(add), P.backtrack1(mu1), fac) )
+  private def ter: Parser1[Term] = whitespaces0.with1 *> parser <* (whitespaces0 ~ P.end)
 
-  private def ter[_: P]: P[Term] = P( add ~ End )
-
-  def parse(str: String): Either[String, Term] = fastparse.parse(str, ter(_)) match {
-    case Parsed.Success(t, _)    => Right(t)
-    case Parsed.Failure(_, _, e) => Left(e.trace().longAggregateMsg)
-  }
+  def parse(str: String): Either[String, Term] = ter.parse(str)
+    .leftMap(e => e.toString).map(_._2)
 }
 
 object FunctionDerivation extends App {
@@ -169,10 +162,26 @@ object FunctionDerivation extends App {
 object StringToTerm extends App {
   import Derive.derive
 
-  val str = "-1.5 * x^3 + x^2 + x + 2"
-//  val str = "-1.5 * x^3 + 2.5 * x^2 + 1.5 * x^1"  //  fails
+  val funcs = List(
+    "2.7182818",
+    "1 * x^1 + 3 * x^4 + 5 * x^6",
+    "1 * x^3 + 1 * x + 4 * x^2 + 1 * x",
+    "x^5 + x^4 + x^3 + x^2 + x^1 + 1",
+    "2 * x^3 + x^2 + x + 2",
+    "2 * x^3 + 2 * x^2 + x + 2",
+    "-1.5 * x^3 + 2.5 * x^2 + 1.5 * x^1",
+    "-1.5 * x^3 + 2.5 * x^2"
+  )
+//  val str = "2.7182818"
+//  val str = "1 * x^1 + 3 * x^4 + 5 * x^6"
+//  val str = "1 * x^3 + 1 * x + 4 * x^2 + 1 * x"
+//  val str = "x^5 + x^4 + x^3 + x^2 + x^1 + 1"
+//  val str = "2 * x^3 + x^2 + x + 2"
+//  val str = "2 * x^3 + 2 * x^2 + x + 2"
+  val str = "-1.5 * x^3 + 2.5 * x^2 + 1.5 * x^1"  //  fails
 //  val str = "-1.5 * x^3 + 2.5 * x^2"
-  val res = Parser.parse(str)
+
+  val res = CatsParser.parse(str)
 
   import Expr.Term
 
@@ -190,5 +199,15 @@ object StringToTerm extends App {
   def der(t: Term, n: Int): Term = { if (n <= 0) t else der(derive(t), n - 1) }
 
   println(s"str: $str")
-  (0 to 3) foreach( i => println(s"de$i: ${pp(res.map(der(_, i)))}"))
+  (0 to 3) foreach( i => println(s"catsParse de$i: ${pp(res.map(der(_, i)))}"))
+
+  val ress = funcs map CatsParser.parse
+
+  funcs foreach { func =>
+    val res = CatsParser.parse(func)
+
+    println(s"str: $func")
+    (0 to 3) foreach( i => println(s"catsParse de$i: ${pp(res.map(der(_, i)))}"))
+    println("---")
+  }
 }
