@@ -25,6 +25,12 @@ object Expr {
     case (_, Num(0))      => Num(0)
     case (_, Num(1))      => m1
     case (Num(x), Num(y)) => Num(x * y)
+    case (Num(x), Mul(Num(y), t)) => makeMul(Num(x * y), t)
+    case (Num(x), Mul(Mul(Num(y), t1), t2)) => makeMul(Num(x * y), makeMul(t1, t2))
+    case (Num(x), Mul(Mul(t1, Num(y)), t2)) => makeMul(Num(x * y), makeMul(t1, t2))
+    case (Num(x), Mul(t1, Mul(Num(y), t2))) => makeMul(Num(x * y), makeMul(t1, t2))
+    case (Num(x), Mul(t1, Mul(t2, Num(y)))) => makeMul(Num(x * y), makeMul(t1, t2))
+    case (Mul(Num(x), t1), Mul(Num(y), t2)) => makeMul(Num(x * y), makeMul(t1, t2))
     case _                => Mul(m1, m2)
   }
 
@@ -60,7 +66,7 @@ object TermShow {
       num.value.toString
   }
   implicit val showVar: Show[Var] = Show.show(v => v.value.toString)
-  implicit val showAdd: Show[Add] = Show.show(add => s"${add.a1.show} + ${add.a2.show}")
+  implicit val showAdd: Show[Add] = Show.show(add => s"(${add.a1.show} + ${add.a2.show})")
   implicit val showMul: Show[Mul] = Show.show(mul => s"${mul.m1.show} * ${mul.m2.show}")
   implicit val showPow: Show[Pow] = Show.show(pow => s"${pow.v.show}^${pow.n.show}")
   implicit val showSin: Show[Sin] = Show.show(sin => s"sin(${sin.t.show})")
@@ -91,14 +97,15 @@ object Derive {
       case Pow(v, n) => makeMul(n, makePow(v, Num(n.value-1)))
     }
   }
+
+  @tailrec
+  def deriveN(t: Term, n: Int): Term = { if (n <= 0) t else deriveN(derive(t), n - 1) }
 }
 
 object CatsParser {
   import Expr._
-
   import cats.implicits.toBifunctorOps
-
-  import cats.parse.{Parser => P, Parser1, Numbers}
+  import cats.parse.{Numbers, Parser1, Parser => P}
 
   private[this] val whitespace: Parser1[Unit] = P.charIn(" \t\r\n").void
   private[this] val whitespaces0: P[Unit] = whitespace.rep.void
@@ -133,25 +140,34 @@ object FunctionDerivation extends App {
   val par1 = Add(Pow(Var('x'), Num(2)), Num(1))   // x^2 + 1
   val par2 = Add(Mul(Num(2.5), Pow(Var('x'), Num(3))), Add(Mul(Num(1.5), Pow(Var('x'), Num(2))), Num(1))) // 2.5*x^3 + 1.5*x^2 + 1
   val sin1 = Sin(Var('x'))
+  val sin2 = Sin(Pow(Var('x'), Num(2)))
   val sinc = Mul(Var('x'), Sin(Var('x')))
   val root = Pow(Var('x'), Num(0.5))
 
+  import Derive.{derive, deriveN}
   import TermShow._
   import cats.syntax.show._
-  import Derive.derive
 
   println(s"$par1 => ${par1.show}")
-  println(s"${par1.show}' => ${derive(par1).show}")
-  println(s"${par1.show}'' => ${derive(derive(par1)).show}")
+  println(s"${par1.show}' =>  ${deriveN(par1, 1).show}")
+  println(s"${par1.show}'' => ${deriveN(par1, 2).show}")
 
-  println(s"${par2.show}'   => ${derive(par2).show}")
-  println(s"${par2.show}''  => ${derive(derive(par2)).show}")
-  println(s"${par2.show}''' => ${derive(derive(derive(par2))).show}")
+  println(s"${par2.show}'   => ${deriveN(par2, 1).show}")
+  println(s"${par2.show}''  => ${deriveN(par2, 2).show}")
+  println(s"${par2.show}''' => ${deriveN(par2, 3).show}")
 
-  println(s"${sin1.show}' => ${derive(sin1).show}")
-  println(s"${sin1.show}'' => ${derive(derive(sin1)).show}")
-  println(s"${sin1.show}''' => ${derive(derive(derive(sin1))).show}")
-  println(s"${sin1.show}'''' => ${derive(derive(derive(derive(sin1)))).show}")
+  println(s"${sin1.show}' =>    ${deriveN(sin1, 1).show}")
+  println(s"${sin1.show}'' =>   ${deriveN(sin1, 2).show}")
+  println(s"${sin1.show}''' =>  ${deriveN(sin1, 3).show}")
+  println(s"${sin1.show}'''' => ${deriveN(sin1, 4).show}")
+
+  println(s"${sin2.show}' =>    ${deriveN(sin2, 1).show}")
+  println(s"${sin2.show}'' =>   ${deriveN(sin2, 2).show}")
+  println(s"${sin2.show}''' =>  ${deriveN(sin2, 3).show}")
+  println(s"${sin2.show}'''' => ${deriveN(sin2, 4).show}")
+  println("------------------")
+  pprint.pprintln(deriveN(sin2, 4))
+  println("------------------")
 
   println(s"${sinc.show}' => ${derive(sinc).show}")
   println(s"${root.show}' => ${derive(root).show}")
