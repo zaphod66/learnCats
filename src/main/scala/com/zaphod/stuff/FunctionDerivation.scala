@@ -25,6 +25,8 @@ object Expr {
     case (_, Num(0))      => Num(0)
     case (_, Num(1))      => m1
     case (Num(x), Num(y)) => Num(x * y)
+    case (Num(x), Mul(Num(y), t)) => Mul(Num(x * y), t)
+    case (Num(x), Mul(t, Num(y))) => Mul(Num(x * y), t)
     case _                => Mul(m1, m2)
   }
 
@@ -92,7 +94,29 @@ object Derive {
     }
   }
 }
-
+//object TinyParser {
+//  import Expr._
+//  import cats.parse.{Parser => P, Parser1, Numbers}
+//
+//  private[this] val whitespace: Parser1[Unit] = P.charIn(" \t\r\n").void
+//  private[this] val whitespaces0: P[Unit] = whitespace.rep.void
+//
+//  private val num: Parser1[Num]  = (whitespaces0.with1 *> Numbers.jsonNumber <* whitespaces0).map(x => Num(x.toDouble))
+//
+//  private def mul: Parser1[Term] = num ~ P.char('*') ~ num
+//  private def mul2 = P.rep1Sep(num, 1, P.char('*')).map { terms =>
+//    terms.foldLeft[Term](Num(1.0)) {
+//      case (acc, term) => makeMul(acc, term)
+//    }
+//  }
+//
+//  private def add = P.rep1Sep(mul, 1, P.char('+')).map { terms =>
+//    terms.foldLeft[Term](Num(0.0)) {
+//      case (acc, term) => makeAdd(acc, term)
+//    }
+//  }
+//
+//}
 object CatsParser {
   import Expr._
 
@@ -106,7 +130,7 @@ object CatsParser {
   private def num: Parser1[Num]  = (whitespaces0.with1 *> Numbers.jsonNumber <* whitespaces0).map(x => Num(x.toDouble))
   private def vaz: Parser1[Var]  = (whitespaces0.with1 *> P.charIn("xyz") <* whitespaces0).map(Var)
   private def pow: Parser1[Term] = whitespaces0.with1 *> ((vaz <* P.char('^')) ~ num).map(vn => makePow(vn._1, vn._2)) <* whitespaces0
-  private def fac: Parser1[Term] = whitespaces0.with1 *> P.oneOf1(List(P.backtrack1(pow), vaz, num)) <* whitespaces0
+  private def fac: Parser1[Term] = whitespaces0.with1 *> P.oneOf1(List(P.backtrack1(pow), vaz, num, P.backtrack1(siz), P.backtrack1(coz))) <* whitespaces0
 
   private def mul = P.rep1Sep(fac, 1, P.char('*')).map { terms =>
     terms.foldLeft[Term](Num(1.0)) {
@@ -120,7 +144,11 @@ object CatsParser {
     }
   }
 
-  private val parser = P.oneOf1( List(add) )
+  private def siz:  Parser1[Term] = (whitespaces0.with1 *> P.string1("sin(") *> vaz <* P.char(')') <* whitespaces0).map(Sin(_))
+  private def coz:  Parser1[Term] = (whitespaces0.with1 *> P.string1("cos(") *> vaz <* P.char(')') <* whitespaces0).map(Cos(_))
+
+  private def parser = P.oneOf1( List(add, siz) )
+
   private def ter: Parser1[Term] = whitespaces0.with1 *> parser <* (whitespaces0 ~ P.end)
 
   def parse(str: String): Either[String, Term] = ter.parse(str)
@@ -162,13 +190,14 @@ object StringToTerm extends App {
 
   val funcs = List(
     "2.7182818",
-    "1 * x^1 + 3 * x^4 + 5 * x^6",
-    "1 * x^3 + 1 * x + 4 * x^2 + 1 * x",
-    "x^5 + x^4 + x^3 + x^2 + x^1 + 1",
-    "2 * x^3 + x^2 + x + 2",
-    "2 * x^3 + 2 * x^2 + x + 2",
-    "-1.5 * x^3 + 2.5 * x^2 + 1.5 * x^1",
-    "-1.5 * x^3 + 2.5 * x^2"
+    "2 * cos(x) * sin(x)",
+//    "1 * x^1 + 3 * x^4 + 5 * x^6",
+//    "1 * x^3 + 1 * x + 4 * x^2 + 1 * x",
+//    "x^5 + x^4 + x^3 + x^2 + x^1 + 1",
+//    "2 * x^3 + x^2 + x + 2",
+//    "2 * x^3 + 2 * x^2 + x + 2",
+//    "-1.5 * x^3 + 2.5 * x^2 + 1.5 * x^1",
+//    "-1.5 * x^3 + 2.5 * x^2"
   )
 
   val str = "-1.5 * x^3 + 2.5 * x^2 + 1.5 * x^1"
@@ -198,7 +227,11 @@ object StringToTerm extends App {
     val res = CatsParser.parse(func)
 
     println(s"str: $func")
-    (0 to 3) foreach( i => println(s"catsParse de$i: ${pp(res.map(der(_, i)))}"))
+    (0 to 3) foreach { i =>
+      val d = res.map(der(_, i))
+      println(s"catsParse de$i: ${pp(d)}")
+//      println(s"        ->  $i: $d")
+    }
     println("---")
   }
 }
