@@ -141,7 +141,7 @@ object FunctionDerivation extends App {
   val par2 = Add(Mul(Num(2.5), Pow(Var('x'), Num(3))), Add(Mul(Num(1.5), Pow(Var('x'), Num(2))), Num(1))) // 2.5*x^3 + 1.5*x^2 + 1
   val sin1 = Sin(Var('x'))
   val sin2 = Sin(Pow(Var('x'), Num(2)))
-  val sinc = Mul(Var('x'), Sin(Var('x')))
+  val sinc = Mul(Sin(Var('x')), Pow(Var('x'), Num(-1)))
   val root = Pow(Var('x'), Num(0.5))
 
   import Derive.{derive, deriveN}
@@ -164,12 +164,14 @@ object FunctionDerivation extends App {
   println(s"${sin2.show}' =>    ${deriveN(sin2, 1).show}")
   println(s"${sin2.show}'' =>   ${deriveN(sin2, 2).show}")
   println(s"${sin2.show}''' =>  ${deriveN(sin2, 3).show}")
-  println(s"${sin2.show}'''' => ${deriveN(sin2, 4).show}")
-  println("------------------")
-  pprint.pprintln(deriveN(sin2, 4))
-  println("------------------")
+//  println("------------------")
+  pprint.pprintln(deriveN(sin2, 2))
+//  println("------------------")
 
-  println(s"${sinc.show}' => ${derive(sinc).show}")
+  println(s"${sinc.show}' =>    ${deriveN(sinc, 1).show}")
+  println(s"${sinc.show}'' =>   ${deriveN(sinc, 2).show}")
+  println(s"${sinc.show}''' =>  ${deriveN(sinc, 3).show}")
+
   println(s"${root.show}' => ${derive(root).show}")
 }
 
@@ -202,19 +204,15 @@ object StringToTerm extends App {
     )
   }
 
-  @tailrec
-  def der(t: Term, n: Int): Term = { if (n <= 0) t else der(derive(t), n - 1) }
-
-//  println(s"str: $str")
-//  (0 to 3) foreach( i => println(s"catsParse de$i: ${pp(res.map(der(_, i)))}"))
-
   val ress = funcs map CatsParser.parse
 
   funcs foreach { func =>
     val res = CatsParser.parse(func)
 
+    import Derive.deriveN
+
     println(s"str: $func")
-    (0 to 3) foreach( i => println(s"catsParse de$i: ${pp(res.map(der(_, i)))}"))
+    (0 to 3) foreach( i => println(s"catsParse de$i: ${pp(res.map(deriveN(_, i)))}"))
     println("---")
   }
 }
