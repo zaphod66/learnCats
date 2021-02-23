@@ -1,8 +1,8 @@
 package com.zaphod.countdownlatch
 
 import java.util.concurrent.RejectedExecutionException
-import scala.concurrent.duration.{Duration, FiniteDuration}
-import scala.concurrent.{ExecutionContext, TimeoutException, blocking}
+import scala.concurrent.duration.{Duration, DurationInt, FiniteDuration}
+import scala.concurrent.{Await, ExecutionContext, TimeoutException, blocking}
 
 object CountDownLatchJava extends App {
   import java.util.concurrent.CountDownLatch
@@ -41,7 +41,7 @@ object CountDownLatchJava extends App {
     results = results.updated(sharedState, results.getOrElse(sharedState, 0) + 1)
   }
 
-  println("Done")
+  println("... Done")
   println(results /*.toList.sortBy(_._2).reverse.take(5).mkString(" ") */)
 }
 
@@ -139,6 +139,46 @@ object CountDownLatchASync extends App {
           }
         case _ => Future.unit
       }
-
   }
+
+  // --------------------------------
+
+  val threadCount = 4
+  val iterations = 10000
+  var results = Map.empty[Int, Int]
+
+  import scala.concurrent.ExecutionContext.Implicits.global
+
+  println("Started ...")
+  for (_ <- 0 until iterations) {
+    val consumersStarted = new ASyncCountDownLatch(threadCount)
+    val mainThreadReady  = new ASyncCountDownLatch(1)
+    val consumersFinished = new ASyncCountDownLatch(threadCount)
+
+    var sharedState = 0
+
+    for (_ <- 0 until threadCount) {
+      for {
+        _ <- Future.unit
+        _ =  consumersStarted.countDown()
+        _ <- mainThreadReady.await(Duration.Inf)
+      } yield {
+        sharedState += 1
+        consumersFinished.countDown()
+      }
+    }
+
+    val await = for {
+      _ <- consumersStarted.await(Duration.Inf)
+      _ =  mainThreadReady.countDown()
+      _ <- consumersFinished.await(1.minute)
+    } yield {
+      results = results.updated(sharedState, results.getOrElse(sharedState, 0) + 1)
+    }
+
+    Await.result(await, Duration.Inf)
+  }
+
+  println("... Done")
+  println(results)
 }
