@@ -216,7 +216,7 @@ object CallbackHell extends App {
 
   timesFourAsync(21) { result => println(s"res: $result") }
 
-  Thread.sleep(10)
-  
+  Thread.sleep(5)
+
   println("Done")
 }
