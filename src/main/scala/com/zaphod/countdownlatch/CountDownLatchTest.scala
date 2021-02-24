@@ -144,7 +144,7 @@ object CountDownLatchASync extends App {
   // --------------------------------
 
   val threadCount = 4
-  val iterations = 10000
+  val iterations = 100000
   var results = Map.empty[Int, Int]
 
   import scala.concurrent.ExecutionContext.Implicits.global
@@ -171,14 +171,52 @@ object CountDownLatchASync extends App {
     val await = for {
       _ <- consumersStarted.await(Duration.Inf)
       _ =  mainThreadReady.countDown()
-      _ <- consumersFinished.await(1.minute)
+      _ <- consumersFinished.await(1.milli)
     } yield {
       results = results.updated(sharedState, results.getOrElse(sharedState, 0) + 1)
     }
 
-    Await.result(await, Duration.Inf)
+    try {
+      Await.result(await, Duration.Inf)
+    } catch {
+      case _: TimeoutException =>
+        println("Timeout...")
+        results.updated(0, results.getOrElse(0, 0) + 1)
+    }
   }
 
   println("... Done")
   println(results)
+}
+
+object CallbackHell extends App {
+  import scala.concurrent.ExecutionContext.global
+
+  type Async[A] = (A => Unit) => Unit
+
+  def timesTwoAsync(n: Int): Async[Int] =
+    onFinish => {
+      global.execute(() => {
+        val res = n * 2
+        onFinish(res)
+      })
+    }
+
+  // Usage
+  timesTwoAsync(21) { result => println(s"res: $result") }
+
+  def timesFourAsync(n: Int): Async[Int] =
+    onFinish => {
+      timesTwoAsync(n) { a =>
+        timesTwoAsync(n) { b =>
+          onFinish(a + b)
+        }
+      }
+    }
+
+  timesFourAsync(21) { result => println(s"res: $result") }
+
+  Thread.sleep(10)
+  
+  println("Done")
 }
