@@ -89,10 +89,7 @@ object StateTest extends App {
             val a = go2(c, r - 1, acc)
             val acc2 = acc + ((c, r - 1) -> a)
             val b = go2(c - 1, r - 1, acc2)
-            val acc3 = acc2 + ((c - 1, r - 1) -> b)
-            val p = a + b
-            val acc4 = acc3 + ((c, r) -> p)
-            go2(c, r, acc4)
+            a + b
           }
       }
     }
