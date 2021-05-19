@@ -24,6 +24,8 @@ libraryDependencies += "org.typelevel" %% "cats-effect" % "1.4.0"
 
 libraryDependencies += "org.typelevel" %% "cats-effect-laws" % "1.3.1"
 
+libraryDependencies += "org.scala-lang.modules" %% "scala-swing" % "3.0.0"
+
 scalacOptions ++= Seq("-feature", "-deprecation", "-Ypartial-unification")
 
 // scalacOptions += "-Ystatistics:typer"
