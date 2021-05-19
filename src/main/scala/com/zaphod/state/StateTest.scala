@@ -83,8 +83,8 @@ object StateTest extends App {
         } else if (r == 0) {
           1
         } else {
-          val a = go3(c, r - 1)
-          val b = go3(c - 1, r - 1)
+          val a = go2(c, r - 1)
+          val b = go2(c - 1, r - 1)
           a + b
         }
       }
