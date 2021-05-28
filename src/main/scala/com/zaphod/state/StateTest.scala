@@ -90,8 +90,8 @@ object StateTest extends App {
       }
 
 
-    //    go1(c, r).run(Map.empty).value._2
-    go2(c, r)
+    go1(c, r).run(Map.empty).value._2
+    //go2(c, r)
   }
 
   (0 to 9) foreach { r =>
