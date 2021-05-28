@@ -49,4 +49,54 @@ object StateTest extends App {
   println(s"label: ${labelTree(tree4)}")
 //  println(s"tree5: $tree5")
 //  println(s"label: ${labelTree(tree5)}")
+
+  // Pascal triangle
+
+  def pascal(c: Int, r: Int): BigInt = {
+    import cats.data.State
+
+    def go1(c: BigInt, r: BigInt): State[Map[(BigInt,BigInt), BigInt], BigInt] = State[Map[(BigInt,BigInt), BigInt], BigInt] { s1 =>
+      s1.get((c, r)) match {
+        case Some(a) =>
+          (s1, a)
+        case None    =>
+          if (c < 0 || c > r) {
+            (s1, 0)
+          }
+          else if (r == 0) {
+            (s1, 1)
+          }
+          else {
+            val (s2, a) = go1(c, r - 1).run(s1).value
+            val (s3, b) = go1(c - 1, r - 1).run(s2).value
+            val p = a + b
+            val s4 = s3 + ((c, r) -> p)
+            (s4, p)
+          }
+      }
+    }
+
+    def go2(c: BigInt, r: BigInt): BigInt = {
+        if (c < 0 || c > r) {
+          0
+        } else if (r == 0) {
+          1
+        } else {
+          val a = go2(c, r - 1)
+          val b = go2(c - 1, r - 1)
+          a + b
+        }
+      }
+
+
+    go1(c, r).run(Map.empty).value._2
+    //go2(c, r)
+  }
+
+  (0 to 9) foreach { r =>
+    (0 to r) foreach { c =>
+      println(s"pascal($c, $r) = ${pascal(c, r)}")
+    }
+    println("--------------")
+  }
 }

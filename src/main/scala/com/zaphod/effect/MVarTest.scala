@@ -1,7 +1,7 @@
 package com.zaphod.effect
 
-import cats.effect.{Fiber, ContextShift, IO}
-import cats.effect.concurrent.MVar
+import cats.effect.{ContextShift, Fiber, IO}
+import cats.effect.concurrent.{MVar, MVar2}
 
 // Doesn't work
 object MVarTest extends App {
@@ -11,7 +11,7 @@ object MVarTest extends App {
   implicit val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
 
   object ProducerConsumer {
-    type Channel[A] = MVar[IO, Option[A]]
+    type Channel[A] = MVar2[IO, Option[A]]
 
     def producer(channel: Channel[Int], list: List[Int]): IO[Unit] = {
       println(s"producer($list)")

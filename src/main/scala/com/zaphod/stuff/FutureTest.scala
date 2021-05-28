@@ -34,7 +34,7 @@ object MyFuture {
   def failed[T](exception: Throwable): MyFuture[T] = new MyFuture(Promise.failed(exception).future)
   def successful[T](result: T): MyFuture[T] = new MyFuture(Promise.successful(result).future)
 
-  def apply[T](body: =>T)(implicit executor: ExecutionContext): MyFuture[T] = {
+  def apply[T](body: => T)(implicit executor: ExecutionContext): MyFuture[T] = {
     unit.map(_ => body)
   }
 }
@@ -44,8 +44,11 @@ object FutureTest extends App {
 
   println("======== construction =========")
   val w = MyFuture(1)
+  println("======== MyFuture(1)  =========")
   val x = MyFuture(2)
+  println("======== MyFuture(2)  =========")
   val y = MyFuture(3)
+  println("======== MyFuture(3)  =========")
   println("========      for     =========")
   val z = for {
     h <- w
@@ -53,7 +56,6 @@ object FutureTest extends App {
     j <- y
     k = i + j
   } yield h + k
-
 
   val r = Await.result(z, Duration.Inf)
 

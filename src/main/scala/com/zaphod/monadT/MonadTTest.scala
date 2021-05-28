@@ -3,15 +3,14 @@ package com.zaphod.monadT
 import cats._
 import cats.data._
 import cats.implicits._
-
 import cats.Apply._
 import cats.syntax.apply._
 import cats.Applicative._
 import cats.syntax.applicative._
 
+import scala.annotation.tailrec
 import scala.concurrent._
 import scala.concurrent.ExecutionContext.Implicits.global
-
 import scala.language.higherKinds
 
 object MonadTTest extends App {
@@ -130,6 +129,20 @@ object Funcs {
       else
         None
     }.toList
+
+  def primeFactors(n: Int): List[Int] = {
+    @tailrec
+    def go(c: Int, d: Int, acc: List[Int]): List[Int] = {
+      if (d > c)
+        acc
+      else if (c % d == 0)
+        go(c / d, d, d :: acc)
+      else
+        go(c, d + 1, acc)
+    }
+
+    go(n, 2, List.empty[Int])
+  }
 
   def expensiveComputation(n: Int): Future[Option[Int]] =
     if (n == 1)
