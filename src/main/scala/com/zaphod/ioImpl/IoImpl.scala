@@ -58,12 +58,15 @@ object IO {
         stack.dropWhile(_.isHandler) match {
           case Nil => v.asInstanceOf[A]
           case Bind.K(f) :: stack => loop(f(v), stack)
+          case _ => loop(RaiseError(new RuntimeException("must not happen")), stack)
         }
       case RaiseError(e) =>
         stack.dropWhile(!_.isHandler) match {
           case Nil => throw e
           case Bind.H(f) :: stack => loop(f(e), stack)
+          case _ => loop(RaiseError(new RuntimeException("must not happen")), stack)
         }
+      case Async(_) => loop(RaiseError(new IllegalArgumentException("cannot handle async")), stack)
     }
 
     loop(io, List.empty[Bind])
