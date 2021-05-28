@@ -32,7 +32,7 @@ object Chapter05_MonadTransformer extends App {
     import cats.instances.option._
 
     // using kind projector
-    val doom = 123.pure[EitherT[Option, String, ?]]
+    val doom = 123.pure[EitherT[Option, String, *]]
 
     val errorStack1 = OptionT[ErrorOr, Int](Right(Some(10)))
     val errorStack2 = 32.pure[ErrorOrOption]

@@ -3,10 +3,11 @@ name := """LearnCats"""
 version := "1.0-SNAPSHOT"
 
 scalaVersion := "2.12.14"
+// scalaVersion := "2.13.6"
 
 resolvers += Resolver.sonatypeRepo("releases")
 
-addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.8")
+addCompilerPlugin("org.typelevel" % "kind-projector" % "0.13.0" cross CrossVersion.full)
 
 libraryDependencies += "org.typelevel" %% "cats-core" % "2.6.1"
 libraryDependencies += "org.typelevel" %% "cats-free" % "2.6.1"
