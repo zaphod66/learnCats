@@ -2,7 +2,6 @@ package com.zaphod.state
 
 object StateTest extends App {
   sealed trait Tree[A]
-
   final case class Leaf[A](a: A) extends Tree[A]
   final case class Branch[A](l: Tree[A], r: Tree[A]) extends Tree[A]
 
