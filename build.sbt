@@ -2,8 +2,8 @@ name := """LearnCats"""
 
 version := "1.0-SNAPSHOT"
 
-scalaVersion := "2.12.14"
-// scalaVersion := "2.13.6"
+// scalaVersion := "2.12.14"
+scalaVersion := "2.13.5"
 
 resolvers += Resolver.sonatypeRepo("releases")
 
@@ -17,8 +17,8 @@ libraryDependencies += "org.typelevel" %% "cats-effect-laws" % "2.5.1"
 libraryDependencies += "org.scala-lang.modules" %% "scala-swing" % "3.0.0"
 libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value
 
-scalacOptions ++= Seq("-feature", "-deprecation", "-Ypartial-unification")
+//scalacOptions ++= Seq("-feature", "-deprecation", "-Ypartial-unification")
+scalacOptions ++= Seq("-feature", "-deprecation")
 // scalacOptions += "-Ystatistics:typer"
 
 // initialCommands in console := "import cats._, cats.implicits._"
-
