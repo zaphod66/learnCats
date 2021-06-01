@@ -23,7 +23,7 @@ object Chapter03_Functor extends App {
     import cats.syntax.functor._
 
     val f2 = (x: Int) => x * 2
-    val f3 = (x: Int) => x + "!"
+    val f3 = (x: Int) => s"$x!"
     val f4 = f1.map(f2).map(f3)
 
     println(s"f4(123) = ${f4(123)}")

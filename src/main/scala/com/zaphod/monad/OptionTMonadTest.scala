@@ -3,7 +3,6 @@ package com.zaphod.monad
 import cats._
 
 import scala.annotation.tailrec
-import scala.language.higherKinds
 
 object OptionTMonadTest {
   implicit val listMonad: Monad[List] = new Monad[List] {
@@ -22,7 +21,7 @@ object OptionTMonadTest {
         case Nil         => ()
       }
       go(f(a) :: Nil)
-      buf.result
+      buf.result()
     }
 
   }

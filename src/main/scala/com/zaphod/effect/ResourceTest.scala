@@ -18,7 +18,7 @@ object ResourceTest extends App {
       inner <- mkResourse("inner")
     } yield (outer, inner)
 
-    r.use { case (a, b) => IO(println(s"Using $a and $b")) }.unsafeRunSync
+    r.use { case (a, b) => IO(println(s"Using $a and $b")) }.unsafeRunSync()
   }
 
   object CopyFile {

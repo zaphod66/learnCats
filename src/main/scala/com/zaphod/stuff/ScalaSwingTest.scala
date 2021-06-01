@@ -10,6 +10,6 @@ object ScalaSwingTest extends SimpleSwingApplication {
     title = "Hello, World!"
     contents = scrollPane
     size = new Dimension(600, 400)
-    centerOnScreen
+    centerOnScreen()
   }
 }

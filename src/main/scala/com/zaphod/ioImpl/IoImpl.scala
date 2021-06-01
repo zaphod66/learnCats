@@ -120,7 +120,7 @@ object IO {
 object IoImpl extends App {
   import IO._
 
-  val read: IO[String]   = IO(scala.io.StdIn.readLine)
+  val read: IO[String]   = IO(scala.io.StdIn.readLine())
   def putStrLn[A](v: A): IO[Unit] = IO(println(v))
   val prompt: IO[String] = putStrLn("What is your name?") >> read
   val hello: IO[Unit]    = prompt.flatMap(n => putStrLn(s"Hello $n!"))

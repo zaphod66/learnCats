@@ -39,7 +39,7 @@ object Chapter07_Foldable_Traverse extends App {
     import cats.instances.stream._
     import cats.Eval
 
-    def bigData: Stream[Int] = (1 to 100000).toStream
+    def bigData: LazyList[Int] = (1 to 100000).to(LazyList)
 
     val s1 = try {
       bigData.foldRight(0L)(_ + _).toString
@@ -47,7 +47,7 @@ object Chapter07_Foldable_Traverse extends App {
       case t: Throwable => t.toString
     }
 
-    val e1 = Foldable[Stream].foldRight(bigData, Eval.now(0L))( (i, acc) => acc.map(_ + i) ).value
+    val e1 = Foldable[LazyList].foldRight(bigData, Eval.now(0L))( (i, acc) => acc.map(_ + i) ).value
 
     println(s"s1: $s1\te1: $e1")
 
@@ -96,8 +96,6 @@ object Chapter07_Foldable_Traverse extends App {
 
     val zero = List.empty[Int].pure[Future]
     def combine(acc: Future[List[Int]], host: String): Future[List[Int]] = (acc, getUptime(host)).mapN(_ :+ _)
-
-    import scala.language.higherKinds
 
     def listTraverse[F[_]: Applicative, A, B](as: List[A])(f: A => F[B]): F[List[B]] =
       as.foldLeft(List.empty[B].pure[F]) { (acc, a) =>
