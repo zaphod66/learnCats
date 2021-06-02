@@ -1,6 +1,7 @@
 package com.zaphod.effect
 
 import cats.laws
+import cats.effect.unsafe.implicits.global
 
 object SyncTest extends App {
   import cats.effect.{IO, Sync}

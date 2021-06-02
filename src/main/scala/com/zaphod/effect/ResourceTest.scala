@@ -1,5 +1,7 @@
 package com.zaphod.effect
 
+import cats.effect.unsafe.implicits.global
+
 object ResourceTest extends App {
 
   object One {

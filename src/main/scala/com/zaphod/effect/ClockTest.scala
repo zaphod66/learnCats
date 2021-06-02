@@ -1,7 +1,9 @@
 package com.zaphod.effect
 
-import scala.concurrent.duration.TimeUnit
-import scala.language.higherKinds
+import cats.Applicative
+
+import scala.concurrent.duration.{FiniteDuration, TimeUnit}
+import cats.effect.unsafe.implicits.global
 
 object ClockTest extends App {
   import cats.effect._
@@ -9,16 +11,16 @@ object ClockTest extends App {
 
   import scala.concurrent.duration.{MILLISECONDS, NANOSECONDS}
 
-  def measure[F[_], A](fa: F[A])(implicit F: Sync[F], clock: Clock[F]): F[(A, Long)] = {
+  def measure[F[_], A](fa: F[A])(implicit F: Sync[F], clock: Clock[F]): F[(A, FiniteDuration)] = {
     for {
-      start <- clock.monotonic(MILLISECONDS)
+      start <- clock.monotonic
       result <- fa
-      finish <- clock.monotonic(MILLISECONDS)
+      finish <- clock.monotonic
     } yield (result, finish - start)
   }
 
   def fib(n: Int): IO[Int] = {
-    IO.suspend {
+    IO.defer {
 //      println(s"fib($n)")
       if (n <= 1) IO.pure(n)
       else (fib(n - 1), fib(n - 2)).mapN(_ + _)
@@ -26,15 +28,19 @@ object ClockTest extends App {
   }
 
   implicit val clockIO: Clock[IO] = new Clock[IO] {
-    override def realTime(unit: TimeUnit): IO[Long] = {
-      println(s"realTime($unit)")
-      IO(unit.convert(System.currentTimeMillis(), MILLISECONDS))
+    override def realTime: IO[FiniteDuration] = {
+      val time = System.currentTimeMillis()
+      println(s"realTime($time)")
+      IO(FiniteDuration(time, MILLISECONDS))
     }
 
-    override def monotonic(unit: TimeUnit): IO[Long] = {
-      println(s"monotonic($unit)")
-      IO(unit.convert(System.nanoTime(), NANOSECONDS))
+    override def monotonic: IO[FiniteDuration] = {
+      val nano = System.nanoTime()
+      println(s"monotonic($nano)")
+      IO(FiniteDuration(nano, NANOSECONDS))
     }
+
+    override def applicative: Applicative[IO] = ???
   }
 
 //  implicit val clockIO: Clock[IO] = Clock.create[IO]

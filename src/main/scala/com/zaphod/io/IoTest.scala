@@ -1,7 +1,8 @@
 package com.zaphod.io
 
 import cats.effect.IO
-import cats.implicits._, cats.effect.implicits._
+// import cats.implicits._, cats.effect.implicits._
+import cats.effect.unsafe.implicits.global
 import cats.Functor
 import cats.Applicative
 
@@ -17,7 +18,7 @@ trait DB {
 object IoTest extends App {
 
   def fib(n: Int, a: Long, b: Long): IO[Long] =
-    IO.suspend {
+    IO.defer {
       if (n > 0)
         fib(n - 1, b, a + b)
       else

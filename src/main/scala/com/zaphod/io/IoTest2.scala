@@ -2,6 +2,8 @@ package com.zaphod.io
 
 import cats.effect.IO
 
+import cats.effect.unsafe.implicits.global
+
 object IoTest2 extends App {
   val io1 = IO {
     println("  start io1")
