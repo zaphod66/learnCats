@@ -19,7 +19,7 @@ object ClockTest extends App {
     } yield (result, finish - start)
   }
 
-  def fib(n: Int): IO[Int] = {
+  def fib(n: Long): IO[Long] = {
     IO.defer {
 //      println(s"fib($n)")
       if (n <= 1) IO.pure(n)
@@ -67,5 +67,5 @@ object ClockTest extends App {
 
   println(s"r10: $r10")
   println(s"r12: $r12")
-  println(s"r20: $r36")
+  println(s"r36: $r36")
 }
