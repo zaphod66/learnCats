@@ -23,13 +23,13 @@ object JDBC {
 }
 
 object BlockerTest extends IOApp {
-  val jdbc1: Resource[IO, JDBC[IO]] = Resource.pure(JDBC.mock[IO])
-  val jdbc2: Resource[IO, JDBC[IO]] = Resource.pure(JDBC.mockIO)
+  val jdbc1: JDBC[IO] = JDBC.mock[IO]
+  val jdbc2: JDBC[IO] = JDBC.mockIO
 
   def putStrLn(s: String): IO[Unit] = IO(println(s))
-  def wrap(res: Resource[IO, JDBC[IO]]): IO[Unit] = for {
+  def wrap(jdbc: JDBC[IO]): IO[Unit] = for {
     _ <- putStrLn("Start")
-    _ <- res.use(_.execute)
+    _ <- jdbc.execute
     _ <- putStrLn("End")
   } yield ()
 
