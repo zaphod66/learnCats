@@ -6,9 +6,8 @@ object ResourceTest extends App {
 
   object One {
     import cats.effect.{IO, Resource}
-    import cats.implicits._
 
-    def mkResourse(s: String) = {
+    def mkResourse(s: String): Resource[IO, String] = {
       val acquire = IO(println(s"Acquiring $s")) *> IO.pure(s)
       def release(s: String) = IO(println(s"Releasing $s"))
 
