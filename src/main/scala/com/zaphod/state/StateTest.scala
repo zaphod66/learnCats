@@ -24,19 +24,32 @@ object StateTest extends App {
 
   def labelTree[A](tree: Tree[A]): Tree[(A, Int)] = {
     import cats.data.State
+    import cats.data.State._
 
-    def go(tree: Tree[A]): State[Int, Tree[(A, Int)]] = State[Int, Tree[(A, Int)]] { s1 =>
+    def go1(tree: Tree[A]): State[Int, Tree[(A, Int)]] = State[Int, Tree[(A, Int)]] { s1 =>
       tree match {
         case Leaf(a)      => (s1 + 1, Leaf((a, s1)))
         case Branch(l, r) =>
-          val (s2, ll) = go(l).run(s1).value
-          val (s3, rl) = go(r).run(s2).value
+          val (s2, ll) = go1(l).run(s1).value
+          val (s3, rl) = go1(r).run(s2).value
 
           (s3, Branch(ll, rl))
       }
     }
 
-    go(tree).run(0).value._2
+    def go2(tree: Tree[A]): State[Int, Tree[(A, Int)]] = tree match {
+      case Leaf(x) => for {
+                        n <- get
+                        _ <- set(n + 1)
+                      } yield Leaf((x, n))
+      case Branch(l, r) => for {
+                             ll <- go2(l)
+                             rr <- go2(r)
+                           } yield Branch(ll, rr)
+    }
+
+//    go1(tree).run(0).value._2
+    go2(tree).run(0).value._2
   }
 
   println(s"tree1: $tree1")

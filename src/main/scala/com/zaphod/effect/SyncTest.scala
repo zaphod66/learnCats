@@ -19,6 +19,7 @@ object SyncTest extends App {
       result <-> F.pure(())
     }
   }
+
   object Use {
     private val ioa = Sync[IO].delay(println("Hello World!"))
 
