@@ -1,7 +1,5 @@
 package com.zaphod.UnderScore
 
-import scala.language.higherKinds
-
 object Chapter04_Monad extends App {
 
   object Definition {

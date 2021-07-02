@@ -1,7 +1,5 @@
 package com.zaphod.basics
 
-import scala.language.higherKinds
-
 import cats.implicits._
 
 object BasicsTest {

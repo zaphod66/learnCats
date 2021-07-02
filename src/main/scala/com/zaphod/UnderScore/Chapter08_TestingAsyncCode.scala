@@ -4,8 +4,6 @@ object Chapter08_TestingAsyncCode extends App {
 
   import scala.concurrent.Future
 
-  import scala.language.higherKinds
-
   object Exercise {
     import cats.instances.list._
     import cats.syntax.traverse._
