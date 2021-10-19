@@ -14,12 +14,15 @@ object StateImpl extends App {
   }
 
   object State {
-    def pure[S, A](a: => A): State[S, A]     = State(s => (s, a))
+    def pure[S, A](a: => A): State[S, A] = State(s => (s, a))
+
+//    def map[S, A, B](sa: State[S, A])(f: A => B): State[S, B] = sa.map(f)
+//    def flatMap[S, A, B](sa: State[S, A])(f: A => State[S, B]): State[S, B] = sa.flatMap(f)
 
     def getState[S]: State[S, S]             = State(s => (s, s))
     def setState[S](s: => S): State[S, Unit] = State(_ => (s, ()))
   }
-  
+
   // ----------------------
 
   def zipWithIndex[A](as: List[A]): List[(Int, A)] = {
@@ -32,6 +35,12 @@ object StateImpl extends App {
         _  <- setState(n + 1)
       } yield (n, a) :: xs }.run(0)._2.reverse
   }
+
+  import com.zaphod.state.StateImpl.State._
+
+  val x = State.pure[Int, List[(Int, String)]](List.empty)
+  val y = x.map(a => a.map(p => p._2.toInt))
+  val z = x.flatMap(_ => getState)
 
   val list1 = List(4, 3, 2, 1)
   val list2 = zipWithIndex(list1)

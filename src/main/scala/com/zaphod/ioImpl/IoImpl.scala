@@ -122,7 +122,9 @@ object IoImpl extends App {
 
   val read: IO[String]   = IO(scala.io.StdIn.readLine())
   def putStrLn[A](v: A): IO[Unit] = IO(println(v))
+  def putStr[A](v: A): IO[Unit] = IO(print(v))
   val prompt: IO[String] = putStrLn("What is your name?") >> read
+  def ask[A](v: => A): IO[String] = putStr(v) >> read
   val hello: IO[Unit]    = prompt.flatMap(n => putStrLn(s"Hello $n!"))
 
 //  println(s"hello: $hello")
@@ -139,8 +141,7 @@ object IoImpl extends App {
 
   def parse(s: String): IO[Int] = IO(s.toInt).handleErrorWith(_ => IO(0))
   val out2 = for {
-    _ <- putStrLn("Enter a number: ")
-    s <- read
+    s <- ask("Enter a number: ")
     i <- parse(s)
     _ <- putStrLn(s"$s -> $i")
   } yield ()
