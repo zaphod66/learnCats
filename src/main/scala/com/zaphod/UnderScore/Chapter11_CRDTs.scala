@@ -97,8 +97,6 @@ object Chapter11_CRDTs extends App {
   }
 
   object GCounterTypeClass {
-    import scala.language.higherKinds
-
     import cats.Monoid
     import cats.instances.map._
     import cats.instances.list._

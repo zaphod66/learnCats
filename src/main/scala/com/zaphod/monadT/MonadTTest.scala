@@ -11,7 +11,6 @@ import cats.syntax.applicative._
 import scala.annotation.tailrec
 import scala.concurrent._
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.language.higherKinds
 
 object MonadTTest extends App {
 

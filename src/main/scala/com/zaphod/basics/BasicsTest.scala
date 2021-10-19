@@ -1,7 +1,5 @@
 package com.zaphod.basics
 
-import scala.language.higherKinds
-
 import cats.implicits._
 
 object BasicsTest {
@@ -23,7 +21,6 @@ object BasicsTest {
 }
 
 object Hierarchie {
-  import scala.language.higherKinds
 
   trait Functor[F[_], A] {
     def map[B](fa: F[A])(f: A => B): F[B]

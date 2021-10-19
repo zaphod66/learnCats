@@ -73,8 +73,6 @@ object Chapter06_Semigroupal_Applicative extends App {
   }
 
   object Exercise {
-    import scala.language.higherKinds
-
     import cats.Monad
     import cats.syntax.flatMap._
     import cats.syntax.functor._

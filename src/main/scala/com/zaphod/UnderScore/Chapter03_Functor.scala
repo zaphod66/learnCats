@@ -1,8 +1,6 @@
 package com.zaphod.UnderScore
 
 object Chapter03_Functor extends App {
-  import scala.language.higherKinds
-
   object Basics {
     import cats.Functor
     import cats.instances.list._

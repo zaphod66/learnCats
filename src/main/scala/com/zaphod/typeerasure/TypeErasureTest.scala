@@ -1,7 +1,5 @@
 package com.zaphod.typeerasure
 
-import scala.language.higherKinds
-
 object TypeErasureTest extends App {
 
   case class Thing[T](value: T)
