@@ -4,6 +4,8 @@ import cats.effect.kernel.Deferred
 import cats.effect.{IO, IOApp}
 import cats.syntax.all._
 
+import scala.concurrent.duration.DurationInt
+
 object Example06 extends IOApp.Simple {
 
   sealed trait State
@@ -39,11 +41,14 @@ object Example06 extends IOApp.Simple {
       }
   }
 
-  override def run: IO[Unit] =
+  override def run: IO[Unit] = {
+    val num = 9
     for {
-      latch <- Latch(10)
-      _     <- (1 to 10).toList.traverse { idx => (IO.println(s"$idx counting down") *> latch.release).start }
+      latch <- Latch(num)
+      _     <- (1 to num).toList.traverse { idx => (IO.println(s"$idx counting down")
+                  *> IO.sleep(250.millis) *> latch.release).start }
       _     <- latch.await
       _     <- IO.println("Got past the latch")
     } yield ()
+  }
 }
