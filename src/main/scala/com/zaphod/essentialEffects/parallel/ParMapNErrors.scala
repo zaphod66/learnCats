@@ -4,7 +4,7 @@ import cats.effect.{ExitCode, IO, IOApp}
 import cats.implicits.catsSyntaxTuple2Parallel
 import com.zaphod.util.Debug._
 
-object ParMapNErrors extends IOApp{
+object ParMapNErrors extends IOApp {
   override def run(args: List[String]): IO[ExitCode] =
     e1.attempt.debug *>
       IO("---").debug *>

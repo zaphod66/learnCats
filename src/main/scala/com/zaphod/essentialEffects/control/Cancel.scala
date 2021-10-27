@@ -20,6 +20,7 @@ object Cancel extends IOApp {
 
   def task: IO[String] = IO("task").debug *> IO.never
 
+  //noinspection ForwardReference
   private val prog2 =
     for {
       _     <- IO(()) // to avoid init error (NPE)
