@@ -7,7 +7,8 @@ object Debug {
     def debug: IO[A] =
       for {
         a <- ioa
-        _ = println(s"[${Thread.currentThread.getName}] $a")
+        n = Thread.currentThread.getName
+        _ = println(s"[${Colorize(n)}] $a")
       } yield a
   }
 }
