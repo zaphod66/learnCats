@@ -9,7 +9,7 @@ import scala.concurrent.duration.DurationInt
 
 object Cancel extends IOApp {
   override def run(args: List[String]): IO[ExitCode] =
-    prog1 *> IO("---").debug *> prog2.as(ExitCode.Success)
+    prog1 *> IO("---").debug *> prog2 *> IO("---").debug.as(ExitCode.Success)
 
   private val prog1 = for {
       fiber <- task.onCancel(IO("canceled").debug.void).start

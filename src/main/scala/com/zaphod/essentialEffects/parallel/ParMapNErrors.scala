@@ -11,6 +11,8 @@ object ParMapNErrors extends IOApp {
       e2.attempt.debug *>
       IO("---").debug *>
       e3.attempt.debug *>
+      IO("---").debug *>
+      e4.attempt.debug *>
       IO.pure(ExitCode.Success)
 
   private val ok  = IO("ok").debug
@@ -20,4 +22,5 @@ object ParMapNErrors extends IOApp {
   private val e1 = ( ok, ko1).parMapN((_, _) => ())
   private val e2 = (ko1, ok ).parMapN((_, _) => ())
   private val e3 = (ko1, ko2).parMapN((_, _) => ())
+  private val e4 = (ko2, ko1).parMapN((_, _) => ())
 }
