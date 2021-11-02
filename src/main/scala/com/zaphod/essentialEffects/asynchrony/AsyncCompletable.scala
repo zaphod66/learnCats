@@ -8,7 +8,7 @@ import scala.jdk.FunctionConverters.enrichAsJavaBiFunction
 
 object AsyncCompletable extends IOApp {
   override def run(args: List[String]): IO[ExitCode] =
-    effect.debug.as(ExitCode.Success)
+    IO("main start!").debug *> effect.debug *> IO("main end!").debug.as(ExitCode.Success)
 
   val effect: IO[String] = fromCF(IO(cf()))
 
@@ -28,5 +28,5 @@ object AsyncCompletable extends IOApp {
     }
 
   def cf(): CompletableFuture[String] =
-    CompletableFuture.supplyAsync(() => "woo!")
+    CompletableFuture.supplyAsync(() => { Thread.sleep(100); s"[${Thread.currentThread.getName}] woo!" })
 }
