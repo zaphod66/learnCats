@@ -50,7 +50,7 @@ object EarlyRelease extends IOApp {
 //      config <- Resource.liftK(Config.fromSource(source))
 //    } yield config
     Resource.liftK(sourceResource.use(Config.fromSource))
-  
+
   val dbConnectionResource: Resource[IO, DbConnection] =
     for {
       config <- configResource
