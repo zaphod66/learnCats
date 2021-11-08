@@ -10,23 +10,24 @@ object UseDeferred extends IOApp {
   override def run(args: List[String]): IO[ExitCode] =
     for {
       ticks <- Ref[IO].of(0)
-      is13  <- Deferred[IO, Unit]
+      is13  <- Deferred[IO, Long]
       _     <- (beepWhen13(is13), tickingClock(ticks, is13), printTicks(ticks)).parTupled
     } yield ExitCode.Success
 
-  def beepWhen13(is13: Deferred[IO, Unit]) =
+  def beepWhen13(is13: Deferred[IO, Long]): IO[Unit] =
     for {
       _ <- IO("START listening...").debug
-      _ <- is13.get
-      _ <- IO("BEEP!").debug
+      t <- is13.get
+      _ <- IO(s"BEEP! at $t").debug
     } yield ()
 
-  def tickingClock(ticks: Ref[IO, Int], is13: Deferred[IO, Unit]): IO[Unit] =
+  def tickingClock(ticks: Ref[IO, Int], is13: Deferred[IO, Long]): IO[Unit] =
     for {
       _     <- IO.sleep(1.second)
-      _     <- IO(System.currentTimeMillis()).debug
+      ts    =  System.currentTimeMillis()
+      _     <- IO(ts).debug
       count <- ticks.updateAndGet(_ + 1)
-      _     <- if (count >= 13) is13.complete(()) else IO.unit
+      _     <- if (count >= 13) is13.complete(ts) else IO.unit
       _     <- tickingClock(ticks, is13)
     } yield ()
 
