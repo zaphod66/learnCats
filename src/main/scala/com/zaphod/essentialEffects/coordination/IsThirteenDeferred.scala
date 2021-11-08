@@ -6,7 +6,7 @@ import com.zaphod.util.Debug.DebugHelper
 
 import scala.concurrent.duration.DurationInt
 
-object UseDeferred extends IOApp {
+object IsThirteenDeferred extends IOApp {
   override def run(args: List[String]): IO[ExitCode] =
     for {
       ticks <- Ref[IO].of(0)
