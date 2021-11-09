@@ -54,32 +54,20 @@ object JobScheduler {
                     completed: Chain[Job.Completed] = Chain.empty
                   ) {
     def enqueue(job: Job.Scheduled): State = copy(scheduled = scheduled :+ job)
-    def dequeue: (State, Option[Job.Scheduled]) =
+    def dequeue: (State, Option[Job.Scheduled]) = {
       if (running.size >= maxRunning) this -> None
       else
         scheduled.uncons.map {
           case (h, t) => copy(scheduled = t) -> Option(h)
         }.getOrElse(this -> None)
+    }
 
     def addRunning(job: Job.Running): State =
-      copy(running = running + (job.id -> job))
+      copy(maxRunning = maxRunning - 1, running = running + (job.id -> job))
 
     def onComplete(job: Job.Completed): State =
-      copy(running = running.removed(job.id),  completed = completed :+ job)
+      copy(maxRunning = maxRunning + 1, running = running.removed(job.id),  completed = completed :+ job)
   }
-
-  def scheduler(stateRef: Ref[IO, State], zzz: Zzz): JobScheduler =
-    new JobScheduler {
-      override def schedule(task: IO[_]): IO[Job.Id] = {
-        for {
-          job <- Job.create(task)
-          _   <- IO(job).debug
-          _   <- stateRef.update(_.enqueue(job))
-          _   <- stateRef.get.debug
-          _   <- zzz.wakeUp
-        } yield job.id
-      }
-    }
 
   def resource(max: Int): IO[Resource[IO, JobScheduler]] =
     for {
@@ -89,7 +77,9 @@ object JobScheduler {
         override def schedule(task: IO[_]): IO[Job.Id] =
           for {
             job <- Job.create(task)
+            _   <- IO(job.id).debug
             _   <- state.update(_.enqueue(job))
+            _   <- state.get.debug
             _   <- zzz.wakeUp
           } yield job.id
       }
@@ -173,15 +163,11 @@ object RunScheduler extends IOApp {
       resource  <- JobScheduler.resource(2)
       _         <- resource.use { scheduler =>
         for {
-          jobId1 <- scheduler.schedule(IO("whee1").debug)
-          jobId2 <- scheduler.schedule(IO("whee2").debug)
-          jobId3 <- scheduler.schedule(IO("whee3").debug)
-          jobId4 <- scheduler.schedule(IO("whee4").debug)
-//          _ <- IO(s"jobId: $jobId1").debug
-//          _ <- IO(s"jobId: $jobId2").debug
-//          _ <- IO(s"jobId: $jobId3").debug
-//          _ <- IO(s"jobId: $jobId4").debug
-          fiber <- IO.sleep(100.millis).start
+          _     <- scheduler.schedule(IO.sleep(250.millis) *> IO("whee1").debug)
+          _     <- scheduler.schedule(IO.sleep(240.millis) *> IO("whee2").debug)
+          _     <- scheduler.schedule(IO.sleep(230.millis) *> IO("whee3").debug)
+          _     <- scheduler.schedule(IO.sleep(220.millis) *> IO("whee4").debug)
+          fiber <- IO.sleep(1000.millis).start
           _ <- IO("waiting...").debug
           _ <- fiber.join
         } yield ()
