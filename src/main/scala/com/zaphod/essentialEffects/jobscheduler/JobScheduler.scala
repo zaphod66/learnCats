@@ -136,21 +136,21 @@ trait Zzz {
 
 object Zzz {
   sealed trait ZzzState
-  case object Asleep extends ZzzState
-  case object Awake extends ZzzState
+  case class Asleep() extends ZzzState
+  case class Awake() extends ZzzState
 
   def apply: IO[Zzz] = for {
-    state <- Ref[IO].of[ZzzState](Asleep)
+    state <- Ref[IO].of[ZzzState](Asleep())
     semaphore <- Semaphore[IO](0)
   } yield new Zzz {
     override def sleep: IO[Unit] = state.modify {
-      case Asleep => Asleep -> IO.unit
-      case Awake  => Asleep -> semaphore.acquire
+      case Asleep() => Asleep() -> IO.unit
+      case Awake()  => Asleep() -> semaphore.acquire
     }
 
     override def wakeUp: IO[Unit] = state.modify {
-      case Asleep => Awake -> semaphore.release
-      case Awake  => Awake -> IO.unit
+      case Asleep() => Awake() -> semaphore.release
+      case Awake()  => Awake() -> IO.unit
     }
   }
 }
