@@ -12,9 +12,9 @@ addCompilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1")
 libraryDependencies += "org.typelevel" %% "cats-core" % "2.6.1"
 libraryDependencies += "org.typelevel" %% "cats-free" % "2.6.1"
 
-libraryDependencies += "org.typelevel" %% "cats-effect" % "3.1.1"
-libraryDependencies += "org.typelevel" %% "cats-effect-laws" % "3.1.1"
-libraryDependencies += "org.typelevel" %% "cats-effect-kernel-testkit" % "3.1.1"
+libraryDependencies += "org.typelevel" %% "cats-effect" % "3.2.8"
+libraryDependencies += "org.typelevel" %% "cats-effect-laws" % "3.2.8"
+libraryDependencies += "org.typelevel" %% "cats-effect-kernel-testkit" % "3.2.8"
 
 libraryDependencies += "org.scala-lang.modules" %% "scala-swing" % "3.0.0"
 libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value
