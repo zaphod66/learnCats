@@ -1,7 +1,7 @@
 package com.zaphod.essentialEffects.coordination
 
 import cats.effect.{Deferred, ExitCode, IO, IOApp, Ref}
-import cats.implicits.catsSyntaxTuple2Parallel
+import cats.implicits.catsSyntaxTuple3Parallel
 import com.zaphod.util.Debug.DebugHelper
 
 trait CountDownLatch {
@@ -48,15 +48,21 @@ object RunCountDownLatch extends IOApp {
       result <- IO("action").debug
     } yield result
 
-  def runPrerequisite(latch: CountDownLatch): IO[String] =
+  def runPrerequisite1(latch: CountDownLatch): IO[String] =
     for {
-      result <- IO("Prerequisite").debug
+      result <- IO("Prerequisite1").debug
+      _      <- latch.decrement
+    } yield result
+
+  def runPrerequisite2(latch: CountDownLatch): IO[String] =
+    for {
+      result <- IO("Prerequisite2").debug
       _      <- latch.decrement
     } yield result
 
   val prepareAndRun: IO[Unit] =
     for {
-      latch <- CountDownLatch(1)
-      _ <- (actionWithPrerequisites(latch), runPrerequisite(latch)).parTupled
+      latch <- CountDownLatch(2)
+      _ <- (runPrerequisite1(latch), actionWithPrerequisites(latch), runPrerequisite2(latch)).parTupled
     } yield ()
 }
