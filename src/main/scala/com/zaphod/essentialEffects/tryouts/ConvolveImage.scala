@@ -11,17 +11,15 @@ import java.io.File
 import javax.imageio.ImageIO
 
 object ConvolveImage extends IOApp {
-  val fileName = "/Users/nscheller/Downloads/NilsStundenplan_2021_08.jpeg"
-  val destName = "/Users/nscheller/Downloads/AAA.png"
-  val srcImage: BufferedImage = ImageIO.read(new File(fileName))
-  val resImage = new BufferedImage(srcImage.getWidth, srcImage.getHeight, BufferedImage.TYPE_INT_ARGB)
+  val fileName = "/Users/nschelle/Downloads/Wasserfleck_Erker_2.JPG"
+  val destName = "/Users/nschelle/Downloads/AAA.png"
 
   override def run(args: List[String]): IO[ExitCode] =
     for {
       _   <- IO(withTS(s"reading $fileName")).debug
       src <- IO(ImageIO.read(new File(fileName)))
       _   <- IO(withTS(s"creating destImage")).debug
-      res <- IO(new BufferedImage(srcImage.getWidth, srcImage.getHeight, BufferedImage.TYPE_INT_ARGB))
+      res <- IO(new BufferedImage(src.getWidth, src.getHeight, BufferedImage.TYPE_INT_ARGB))
       _   <- IO(withTS(s"manipulating halfRed")).debug
       _   <- manipulateImage(src, res)(halfRed)
       _   <- IO(withTS(s"blurring")).debug
@@ -30,14 +28,14 @@ object ConvolveImage extends IOApp {
       _   <- IO(ImageIO.write(res, "PNG", new File(destName)))
     } yield ExitCode.Success
 
-  def withTS(s: String): String =
+  private def withTS(s: String): String =
     s"$s - ${System.currentTimeMillis()}"
 
-  def manipulateImage(src: BufferedImage, dest: BufferedImage)(f: (Int, Int, BufferedImage, BufferedImage) => Unit): IO[BufferedImage] = for {
+  private def manipulateImage(src: BufferedImage, dest: BufferedImage)(f: (Int, Int, BufferedImage, BufferedImage) => Unit): IO[BufferedImage] = for {
     _   <- (for (x <- 0 until src.getWidth; y <- 0 until src.getHeight) yield IO(f(x, y, src, dest))).toList.parSequence
   } yield dest
 
-  def halfRed(x: Int, y: Int, srcImage: BufferedImage, resImage: BufferedImage): Unit = {
+  private def halfRed(x: Int, y: Int, srcImage: BufferedImage, resImage: BufferedImage): Unit = {
     val pixel = new Color(srcImage.getRGB(x, y))
     val color = new Color((pixel.getRed / 1.2).toInt, pixel.getGreen, pixel.getBlue, pixel.getAlpha)
 
@@ -58,7 +56,7 @@ object ConvolveImage extends IOApp {
     resImage.setRGB(x, y, color.getRGB)
   }
 
-  def blur(x: Int, y: Int, srcImage: BufferedImage, resImage: BufferedImage): Unit = {
+  private def blur(x: Int, y: Int, srcImage: BufferedImage, resImage: BufferedImage): Unit = {
     val bx = 5
     val by = 5
     val w  = srcImage.getWidth - 1
